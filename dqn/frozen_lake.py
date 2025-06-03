@@ -45,7 +45,7 @@ class DQN():
 
     def train(self, batch):
         # Preparing the batch separating the state and the target values
-        states = np.array([s for s, q in batch])    
+        states = np.array([s for s, q in batch])   
         q_targets = np.array([q for s, q in batch])
 
         # Adapt of the state
@@ -58,8 +58,8 @@ class DQN():
         # Computing the q_value for the state received
         state_input = np.expand_dims(state, axis=0)
         q_values = self.model.predict(state_input, verbose=0)
+        return q_values
     
-
 class QLearner():
     def __init__(self, env:gym.Env, max_steps=5000000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.9999):
         self.env = env
