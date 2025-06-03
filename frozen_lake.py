@@ -105,10 +105,10 @@ class QLearner():
 
 if __name__ == "__main__":
     # Lunar Lander Environment
-    #env = gym.make('FrozenLake-v1', desc=None, map_name="4x4", is_slippery=False)
+    env = gym.make('FrozenLake-v1', desc=None, map_name="4x4", is_slippery=True)
     #env = gym.make('FrozenLake-v1', desc=["FFFH", "HGHF", "FFFF", "SFHF"], map_name=None, is_slippery=False)
-    env = gym.make('FrozenLake-v1', render_mode="human", desc=generate_random_map(size=5), is_slippery=True)
+    #env = gym.make('FrozenLake-v1', render_mode="human", desc=generate_random_map(size=5), is_slippery=True)
 
     ql = QLearner(env)
-    ql.tabular_QLearning()
+    #ql.tabular_QLearning()
     ql.run_policy()

@@ -136,7 +136,7 @@ class QLearner():
 if __name__ == "__main__":
     # Lunar Lander Environment
     env = gym.make("LunarLander-v3", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
-
+    
     ql = QLearner(env)
-    #ql.tabular_QLearning()
+    ql.tabular_QLearning()
     ql.run_policy()
