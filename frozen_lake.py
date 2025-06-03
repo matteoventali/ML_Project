@@ -8,6 +8,7 @@ from collections import defaultdict
 import random as ran
 import pickle
 from pprint import pprint
+from gymnasium.envs.toy_text.frozen_lake import generate_random_map
 
 class QLearner():
     def __init__(self, env:gym.Env, max_steps=5000000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.9999):
@@ -104,19 +105,10 @@ class QLearner():
 
 if __name__ == "__main__":
     # Lunar Lander Environment
-    env = gym.make('FrozenLake-v1', desc=None, map_name="4x4", is_slippery=True)
+    #env = gym.make('FrozenLake-v1', desc=None, map_name="4x4", is_slippery=False)
     #env = gym.make('FrozenLake-v1', desc=["FFFH", "HGHF", "FFFF", "SFHF"], map_name=None, is_slippery=False)
+    env = gym.make('FrozenLake-v1', render_mode="human", desc=generate_random_map(size=5), is_slippery=True)
 
     ql = QLearner(env)
     ql.tabular_QLearning()
-    #ql.run_policy()
-        
-
-    
-
-    
-
-    
-
-
-
+    ql.run_policy()

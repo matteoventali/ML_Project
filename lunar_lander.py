@@ -10,7 +10,7 @@ from pprint import pprint
 import pickle
 
 class ObservationDiscretizer:
-    def __init__(self, space: Box, bins_per_var=12):
+    def __init__(self, space: Box, bins_per_var=6):
         assert space.shape == (8, ), "Space box error" # The observation is a 1D array of 8 elements
         self.bins = bins_per_var
         self.discrete_bins = []
@@ -29,7 +29,7 @@ class ObservationDiscretizer:
     
 
 class QLearner():
-    def __init__(self, env:gym.Env, max_steps=1000000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.9):
+    def __init__(self, env:gym.Env, max_steps=1000000, gamma=0.9, alpha=0.3, end_eps=0.01, start_eps=1.0,  eps_decay=0.999):
         self.env = env
         self.max_steps = max_steps        
         self.gamma = gamma
@@ -84,7 +84,7 @@ class QLearner():
             self.q_table[s][a] += self.alpha * (reward + self.gamma * max(self.q_table[ns]) - self.q_table[s][a])
 
             # Updating new state
-            if terminated or n_step % 500 == 0:
+            if terminated:
                 print(f"episode end, total reward: {total_reward}")
                 self._espilon_update()
                 s, _ = self.env.reset()

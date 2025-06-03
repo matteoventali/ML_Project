@@ -84,7 +84,7 @@ class QLearner():
         n_success = 0
         total_rw = 0
         
-        for i in range(0,1000):
+        for i in range(0,2000):
             s, _ = self.env.reset()
             
             done = False
