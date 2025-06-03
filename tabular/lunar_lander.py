@@ -10,7 +10,7 @@ import random as ran
 from pprint import pprint
 import pickle
 
-def discretize(self, obs):
+def discretize(obs):
         result = []
         
         # Interval array
@@ -22,8 +22,32 @@ def discretize(self, obs):
                             1.25663706,  2.51327412,  3.76991118,  5.02654825,  6.28318531]
         omega_intervals = [-7.5, -5, 0., 5, 7.5]
         
+        result.append(np.digitize(obs[0], x_intervals))
         
+        if obs[1] == 0:
+            result.append(50)
+        else:
+            result.append(np.digitize(obs[1], y_intervals))
         
+        if obs[2] == 0:
+            result.append(50)
+        else:
+            result.append(np.digitize(obs[2], vx_intervals))
+        
+        if obs[3] == 0:
+            result.append(50)
+        else:
+            result.append(np.digitize(obs[3], vy_intervals))
+
+        if obs[4] == 0:
+            result.append(50)
+        else:
+            result.append(np.digitize(obs[4], theta_intervals))
+
+        if obs[5] == 0:
+            result.append(50)
+        else:
+            result.append(np.digitize(obs[5], omega_intervals))
 
         # No need to discretize boolean variables
         result.append(int(obs[6]))
@@ -93,7 +117,7 @@ class QLearner():
                     s = ns
             
             # Stats of the episode
-            print(f"(episode {n_episode}{total_rewards[n_episode]})")
+            print(f"(episode {n_episode} {total_rewards[n_episode]})")
             self._espilon_update()
             s, _ = self.env.reset()
             s = discretize(s)
@@ -145,10 +169,12 @@ if __name__ == "__main__":
     rw_random = ql.tabular_QLearning(0)
     print("\nRestarting training")
     rw_eps = ql.tabular_QLearning()
-
+    
     # Results plot
     plt.plot(rw_random, label='Random policy')
     plt.plot(rw_eps, label='Epsilon Greedy policy')
     plt.show()
 
     #ql.run_policy()
+
+    #print(discretize((-5.1, 0, 6.3, 7.1, 2.544, 4.1, 0, 0)))
