@@ -28,7 +28,7 @@ class QLearner():
     def _next_action(self, current_state):
         n = ran.random()
         if n < self.eps: # Exploration
-            return ran.randint(0,1)
+            return ran.randint(0,self.env.action_space.n - 1)
         else: # Exploitation
             return np.argmax(self.q_table[current_state])
 

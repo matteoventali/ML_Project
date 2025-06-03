@@ -1,5 +1,5 @@
 # Authors: Matteo Ventali and Valerio Spagnoli
-# ML Project : tabular Q-learning for Frozen Lake envinronment
+# ML Project : tabular Q-learning for Taxi envinronment
 
 import numpy as np
 import gymnasium as gym
