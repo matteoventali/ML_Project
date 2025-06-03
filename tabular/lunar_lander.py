@@ -1,6 +1,7 @@
 # Authors: Matteo Ventali and Valerio Spagnoli
 # ML Project : tabular Q-learning for Lunar Lander envinronment
 
+import matplotlib.pyplot as plt
 import numpy as np
 import gymnasium as gym
 from gymnasium.spaces import Box
@@ -9,19 +10,21 @@ import random as ran
 from pprint import pprint
 import pickle
 
-class ObservationDiscretizer:
-    def __init__(self, space: Box, bins_per_var=6):
-        assert space.shape == (8, ), "Space box error" # The observation is a 1D array of 8 elements
-        self.bins = bins_per_var
-        self.discrete_bins = []
-        for i in range(6):
-            self.discrete_bins.append(np.linspace(space.low[i], space.high[i], bins_per_var+1)[1:-1])
-
-    def discretize(self, obs):
+def discretize(self, obs):
         result = []
-        for i in range(6):
-            result.append(np.digitize(obs[i], self.discrete_bins[i]))
         
+        # Interval array
+        x_intervals     = [-0.5, 0.5]
+        y_intervals     = [0., 1.5]
+        vx_intervals    = [-7.5, -5, 0., 5, 7.5]
+        vy_intervals    = [-7.5, -5, 0., 5, 7.5]
+        theta_intervals = [-6.28318531, -5.02654825, -3.76991118, -2.51327412, -1.25663706,  0.,
+                            1.25663706,  2.51327412,  3.76991118,  5.02654825,  6.28318531]
+        omega_intervals = [-7.5, -5, 0., 5, 7.5]
+        
+        
+        
+
         # No need to discretize boolean variables
         result.append(int(obs[6]))
         result.append(int(obs[7]))
@@ -29,15 +32,14 @@ class ObservationDiscretizer:
     
 
 class QLearner():
-    def __init__(self, env:gym.Env, max_steps=1000000, gamma=0.9, alpha=0.3, end_eps=0.01, start_eps=1.0,  eps_decay=0.999):
+    def __init__(self, env:gym.Env, max_episodes=10000, gamma=0.9, alpha=0.3, end_eps=0.01, start_eps=1.0,  eps_decay=0.999):
         self.env = env
-        self.max_steps = max_steps        
+        self.max_episodes = max_episodes        
         self.gamma = gamma
         self.alpha = alpha
         self.end_eps = end_eps
         self.eps = start_eps
         self.eps_decay = eps_decay
-        self.discretizer = ObservationDiscretizer(self.env.observation_space)
         self.policy_name = 'policy_lunar_lander'
         
     
@@ -45,15 +47,15 @@ class QLearner():
         self.eps = max(self.eps_decay * self.eps, self.end_eps)
 
     
-    def _next_action(self, current_state):
+    def _next_action(self, current_state, modality):
         n = ran.random()
-        if n < self.eps: # Exploration
+        if modality == 0  or n < self.eps: # Exploration
             return ran.randint(0,self.env.action_space.n - 1)
         else: # Exploitation
             return np.argmax(self.q_table[current_state])
 
               
-    def tabular_QLearning(self):
+    def tabular_QLearning(self, modality=1): # 0 for random, 1 for eps-greedy policy
         # Q-table creation dynamically. It is implemented as a dictionary in which:
         # - the keys are the states (observation collected)
         # - the values are array of 4 components (number of actions available), representing Q(s,a)
@@ -61,47 +63,48 @@ class QLearner():
         #   the agent ends up in that state
         self.q_table = defaultdict(lambda: np.zeros(self.env.action_space.n))
 
-        success = 0
-        total_reward = 0
-
         # Starting of the environment
         s, _ = self.env.reset()
-        s = self.discretizer.discretize(s)
+        s = discretize(s)
 
-        for n_step in range(self.max_steps):
-            print(f"step n: {n_step}")
-            # Select the action to be executed
-            a = self._next_action(s)
-
-            # Execution of a
-            ns, reward, terminated, _, _ = self.env.step(a)
-            total_reward += reward
-            ns = self.discretizer.discretize(ns)
-
-            # Update Q_table
-            # Q(s,a) = (1 - alpha)*Q(s,a) + alpha*[r + y max_a'{Q(s',a')}]
-            # Q(s,a) = Q(s,a) + alpha[r + y*max_a'{Q(s',a')} - Q(s,a)]
-            self.q_table[s][a] += self.alpha * (reward + self.gamma * max(self.q_table[ns]) - self.q_table[s][a])
-
-            # Updating new state
-            if terminated:
-                print(f"episode end, total reward: {total_reward}")
-                self._espilon_update()
-                s, _ = self.env.reset()
-                s = self.discretizer.discretize(s)
-                if total_reward > 200:
-                    success += 1
-                total_reward = 0
-            else:
-                s = ns
+        # Array for collecting total rewards
+        total_rewards = [0] * self.max_episodes
         
+        # Training of episodes
+        for n_episode in range(self.max_episodes):
+            terminated = False
+
+            while not terminated: # Single episode
+                # Select the action to be executed
+                a = self._next_action(s, modality)
+
+                # Execution of a
+                ns, reward, terminated, _, _ = self.env.step(a)
+                total_rewards[n_episode] += reward
+                ns = discretize(ns)
+
+                # Update Q_table
+                # Q(s,a) = (1 - alpha)*Q(s,a) + alpha*[r + y max_a'{Q(s',a')}]
+                # Q(s,a) = Q(s,a) + alpha[r + y*max_a'{Q(s',a')} - Q(s,a)]
+                self.q_table[s][a] += self.alpha * (reward + self.gamma * max(self.q_table[ns]) - self.q_table[s][a])
+
+                # Updating new state
+                if not terminated:
+                    s = ns
+            
+            # Stats of the episode
+            print(f"(episode {n_episode}{total_rewards[n_episode]})")
+            self._espilon_update()
+            s, _ = self.env.reset()
+            s = discretize(s)
+
         # Dump q_table
         with open(self.policy_name, "wb") as f:
             pickle.dump(dict(ql.q_table), f)
 
-        return success
-    
-    
+        return total_rewards[-30:]
+            
+
     def load_policy(self):
         with open(self.policy_name, "rb") as f:
             self.policy = defaultdict(lambda: np.zeros(self.env.action_space.n),pickle.load(f))
@@ -137,6 +140,15 @@ if __name__ == "__main__":
     # Lunar Lander Environment
     env = gym.make("LunarLander-v3", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
     
+    # Training
     ql = QLearner(env)
-    ql.tabular_QLearning()
-    ql.run_policy()
+    rw_random = ql.tabular_QLearning(0)
+    print("\nRestarting training")
+    rw_eps = ql.tabular_QLearning()
+
+    # Results plot
+    plt.plot(rw_random, label='Random policy')
+    plt.plot(rw_eps, label='Epsilon Greedy policy')
+    plt.show()
+
+    #ql.run_policy()
