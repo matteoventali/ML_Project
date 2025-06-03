@@ -35,7 +35,7 @@ def discretize(obs):
     
 
 class QLearner():
-    def __init__(self, env:gym.Env, max_episodes=10000, gamma=0.9, alpha=0.3, end_eps=0.01, start_eps=1.0,  eps_decay=0.999):
+    def __init__(self, env:gym.Env, max_episodes=30000, gamma=0.9, alpha=0.3, end_eps=0.01, start_eps=1.0,  eps_decay=0.999):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -77,7 +77,7 @@ class QLearner():
         for n_episode in range(self.max_episodes):
             terminated = False
 
-            while not terminated: # Single episode
+            while not (terminated or truncated): # Single episode
                 # Select the action to be executed
                 a = self._next_action(s, modality)
 
@@ -115,33 +115,33 @@ class QLearner():
     
     def run_policy(self):
         self.load_policy()
-
-        n_success = 0
         
-        for i in range(0,1000):
+        total_reward = 0
+        n_episodes = 1000
+
+        for i in range(0,n_episodes):
             s, _ = self.env.reset()
             s = discretize(s)
             
-            done = False
+            terminated = truncated = False
             rw = 0
 
-            while not done:
+            while not (terminated or truncated):
                 a = np.argmax(self.policy[s])
-                ns, r, done, _, _ = self.env.step(a)
+                ns, r, terminated, truncated, _ = self.env.step(a)
                 ns = discretize(ns)
                 rw += r
                 s = ns
 
-            if rw >= 200:
-                n_success += 1
-            
+            total_reward += rw
             print(f"Episode {i}: final state = {s}, total reward = {rw:.2f}")
-            print(f"Reward obtained: {n_success}")
+        
+        print(f"Mean Reward: {total_reward/n_episodes}")
         
 
 if __name__ == "__main__":
     # Lunar Lander Environment
-    env = gym.make("LunarLander-v3", render_mode="human", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
+    env = gym.make("LunarLander-v3", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
     
     # Training
     ql = QLearner(env)
