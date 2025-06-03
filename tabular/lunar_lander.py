@@ -15,39 +15,18 @@ def discretize(obs):
         
         # Interval array
         x_intervals     = [-0.5, 0.5]
-        y_intervals     = [0., 1.5]
-        vx_intervals    = [-7.5, -5, 0., 5, 7.5]
-        vy_intervals    = [-7.5, -5, 0., 5, 7.5]
-        theta_intervals = [-6.28318531, -5.02654825, -3.76991118, -2.51327412, -1.25663706,  0.,
-                            1.25663706,  2.51327412,  3.76991118,  5.02654825,  6.28318531]
-        omega_intervals = [-7.5, -5, 0., 5, 7.5]
+        y_intervals     = [-0.1, 0.1, 1.5]
+        vx_intervals    = [-7.5, -5, -0.3, -0.1, 0.1, 0.3, 5, 7.5]
+        vy_intervals    = [-7.5, -5, -0.3, -0.1, 0.1, 0.3, 5, 7.5]
+        theta_intervals = [-1.25663706,  -0.1, 0.1, 1.25663706]
+        omega_intervals = [-7.5, -5, -0.1, 0.1, 5, 7.5]
         
         result.append(np.digitize(obs[0], x_intervals))
-        
-        if obs[1] == 0:
-            result.append(50)
-        else:
-            result.append(np.digitize(obs[1], y_intervals))
-        
-        if obs[2] == 0:
-            result.append(50)
-        else:
-            result.append(np.digitize(obs[2], vx_intervals))
-        
-        if obs[3] == 0:
-            result.append(50)
-        else:
-            result.append(np.digitize(obs[3], vy_intervals))
-
-        if obs[4] == 0:
-            result.append(50)
-        else:
-            result.append(np.digitize(obs[4], theta_intervals))
-
-        if obs[5] == 0:
-            result.append(50)
-        else:
-            result.append(np.digitize(obs[5], omega_intervals))
+        result.append(np.digitize(obs[1], y_intervals))
+        result.append(np.digitize(obs[2], vx_intervals))
+        result.append(np.digitize(obs[3], vy_intervals))
+        result.append(np.digitize(obs[4], theta_intervals))
+        result.append(np.digitize(obs[5], omega_intervals))
 
         # No need to discretize boolean variables
         result.append(int(obs[6]))
@@ -103,7 +82,7 @@ class QLearner():
                 a = self._next_action(s, modality)
 
                 # Execution of a
-                ns, reward, terminated, _, _ = self.env.step(a)
+                ns, reward, terminated, truncated, _ = self.env.step(a)
                 total_rewards[n_episode] += reward
                 ns = discretize(ns)
 
@@ -126,7 +105,7 @@ class QLearner():
         with open(self.policy_name, "wb") as f:
             pickle.dump(dict(ql.q_table), f)
 
-        return total_rewards[-30:]
+        return total_rewards[-50:]
             
 
     def load_policy(self):
@@ -141,7 +120,7 @@ class QLearner():
         
         for i in range(0,1000):
             s, _ = self.env.reset()
-            s = self.discretizer.discretize(s)
+            s = discretize(s)
             
             done = False
             rw = 0
@@ -149,7 +128,7 @@ class QLearner():
             while not done:
                 a = np.argmax(self.policy[s])
                 ns, r, done, _, _ = self.env.step(a)
-                ns = self.discretizer.discretize(ns)
+                ns = discretize(ns)
                 rw += r
                 s = ns
 
@@ -162,19 +141,19 @@ class QLearner():
 
 if __name__ == "__main__":
     # Lunar Lander Environment
-    env = gym.make("LunarLander-v3", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
+    env = gym.make("LunarLander-v3", render_mode="human", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
     
     # Training
     ql = QLearner(env)
-    rw_random = ql.tabular_QLearning(0)
-    print("\nRestarting training")
-    rw_eps = ql.tabular_QLearning()
+    #rw_random = ql.tabular_QLearning(0)
+    #print("\nRestarting training")
+    #rw_eps = ql.tabular_QLearning()
     
     # Results plot
-    plt.plot(rw_random, label='Random policy')
-    plt.plot(rw_eps, label='Epsilon Greedy policy')
-    plt.show()
+    #plt.plot(rw_random, label='Random policy')
+    #plt.plot(rw_eps, label='Epsilon Greedy policy')
+    #plt.show()
 
-    #ql.run_policy()
+    ql.run_policy()
 
     #print(discretize((-5.1, 0, 6.3, 7.1, 2.544, 4.1, 0, 0)))
