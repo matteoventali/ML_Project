@@ -35,7 +35,7 @@ def discretize(obs):
     
 
 class QLearner():
-    def __init__(self, env:gym.Env, max_episodes=5000, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999):
+    def __init__(self, env:gym.Env, max_episodes=10000, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -94,7 +94,7 @@ class QLearner():
                 self.q_table[s][a] += self.alpha * (reward + self.gamma * max(self.q_table[ns]) - self.q_table[s][a])
 
                 # Updating new state
-                if not terminated:
+                if not (terminated or truncated):
                     s = ns
             
             # Stats of the episode
@@ -120,6 +120,7 @@ class QLearner():
         self.load_policy()
         
         total_reward = 0
+        episodes_reward = []
         n_episodes = 1000
 
         for i in range(0,n_episodes):
@@ -137,9 +138,11 @@ class QLearner():
                 s = ns
 
             total_reward += rw
+            episodes_reward.append(rw)
             print(f"Episode {i}: final state = {s}, total reward = {rw:.2f}")
         
         print(f"Mean Reward: {total_reward/n_episodes}")
+        print(f"Mean Episode Reward: {np.mean(episodes_reward)}")
         
 
 if __name__ == "__main__":
@@ -151,10 +154,13 @@ if __name__ == "__main__":
     #rw_random = ql.tabular_QLearning(0)
     #print("\nRestarting training")
     rw_eps = ql.tabular_QLearning()
+    np.save('../tabular/policies/reward_files', rw_eps)
     #
     ## Results plot
     #plt.plot(np.convolve(rw_random, np.ones(50)/50), label='Random policy')
-    plt.plot(np.convolve(rw_eps, np.ones(50)/50), label='Epsilon Greedy policy')
+    plt.plot(np.convolve(rw_eps, np.ones(50)/50), label='Epsilon Greedy policy 50')
+    plt.plot(np.convolve(rw_eps, np.ones(500)/500), label='Epsilon Greedy policy 500')
+    plt.plot(np.convolve(rw_eps, np.ones(1000)/1000), label='Epsilon Greedy policy 1000')
     plt.show()
 
     #ql.run_policy()
