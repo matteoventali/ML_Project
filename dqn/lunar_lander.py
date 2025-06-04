@@ -1,6 +1,7 @@
 # Authors: Matteo Ventali and Valerio Spagnoli
 # ML Project : DQN for Frozen Lake envinronment
 
+import os
 import numpy as np
 import pandas as pd
 import gymnasium as gym
@@ -11,15 +12,15 @@ from pprint import pprint
 from gymnasium.envs.toy_text.frozen_lake import generate_random_map
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.python.keras import layers
-from tensorflow.python.keras import models
+from tensorflow.keras.models import Sequential #type: ignore
+from tensorflow.keras.layers import Dense, Normalization #type: ignore
 
 class ReplayBuffer:
     def __init__(self, capacity):
         self.buffer = deque(maxlen=capacity)
 
-    def add(self, state, q_values):
-        data = (state, q_values) # (s, <Q(s,a1),  ... , Q(s, aN)>)
+    def add(self, state, action, reward, next_state):
+        data = (state, action, reward, next_state) 
         self.buffer.append(data)
 
     def sample(self, batch_size):
@@ -29,17 +30,18 @@ class ReplayBuffer:
     def __len__(self):
         return len(self.buffer)
 
-class DQN():
+
+class DQN:
     def __init__(self, state_dim, num_actions):
         # Normalization layer
-        self.normalizationLayer = layers.Normalization(input_shape=(state_dim,))
+        self.normalizationLayer = Normalization(input_shape=(state_dim,))
         
         # Creation of the neural network
-        self.model = models.Sequential([
+        self.model = Sequential([
             self.normalizationLayer,
-            layers.Dense(64, activation='relu'),
-            layers.Dense(64, activation='relu'),
-            layers.Dense(num_actions)  # output: Q(s,a) for all a
+            Dense(64, activation='relu'),
+            Dense(64, activation='relu'),
+            Dense(num_actions)  # output: Q(s,a) for all a
         ])
         self.model.compile(loss='mean_absolute_error', optimizer=tf.keras.optimizers.Adam(0.001))
 
@@ -54,7 +56,7 @@ class DQN():
         # Fit
         self.model.fit(states, q_targets, epochs=100)
 
-    def get_qValue(self, state):
+    def predict_qValue(self, state):
         # Computing the q_value for the state received
         state_input = np.expand_dims(state, axis=0)
         q_values = self.model.predict(state_input, verbose=0)
@@ -62,20 +64,20 @@ class DQN():
 
     
 class QLearner():
-    def __init__(self, env:gym.Env, max_steps=5000000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.9999):
+    def __init__(self, env:gym.Env, max_episodes=10000, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999):
         self.env = env
-        self.max_steps = max_steps        
+        self.max_episodes = max_episodes        
         self.gamma = gamma
         self.alpha = alpha
         self.end_eps = end_eps
         self.eps = start_eps
         self.eps_decay = eps_decay
-        
+        self.batch_dimension = 64
+        self.policy_name = "dqn_policy.weights.h5"
         
     def _espilon_update(self):
         self.eps = max(self.eps_decay * self.eps, self.end_eps)
 
-    
     def _next_action(self, current_state):
         n = ran.random()
         if n < self.eps: # Exploration
@@ -83,42 +85,112 @@ class QLearner():
         else: # Exploitation
             return np.argmax(self.q_table[current_state])
 
-              
+    def _prepareBatch(self, batch, q_network : DQN):
+        training_set = [] # Result of preparing the data
+        
+        # Preparing the batch
+        for t in batch: # (s, a, r, s')
+            # Q(s,a) and Q(s',a) forall action a
+            q_values_s = q_network.predict_qValue(t[0])[0]
+            q_values_ns = q_network.predict_qValue(t[3])[0]
+            
+            # Q(s,a) = Q(s,a) + alpha[r + y*max_a'{Q(s',a')} - Q(s,a)]
+            # Updating only in corrispondence of the action
+            action = int(t[1])
+            row = (t[0], q_values_s)
+            row[1][action] = q_values_s[action] + self.alpha * (t[2] + self.gamma * np.max(q_values_ns) - q_values_s[action])
+            
+            training_set.append(row)
+
+        return training_set
+
     def DQN_Learning(self):
         # Creation of the NN representing the Q-table
+        q_network = DQN(8, self.env.action_space.n)
 
         # Creation of the dataset implementing the replay memory
+        memory = ReplayBuffer(10000)
 
         # Starting of the environment
         s, _ = self.env.reset()
 
-        for n_step in range(self.max_steps):
-            print(f"step n: {n_step}")
-            # Select the action to be executed
-            a = self._next_action(s)
+        for n_episodes in range(self.max_episodes):
+            truncated = terminated = False
+            while not (truncated or terminated):
+                # Select the action to be executed
+                a = self._next_action(s)
 
-            # Execution of a
-            ns, reward, terminated, _, _ = self.env.step(a)
-            total_reward += reward
-            
-            # Update Q_table
-            # Q(s,a) = (1 - alpha)*Q(s,a) + alpha*[r + y max_a'{Q(s',a')}]
-            # Q(s,a) = Q(s,a) + alpha[r + y*max_a'{Q(s',a')} - Q(s,a)]
+                # Execution of a
+                ns, reward, terminated, truncated, _ = self.env.step(a)
+                
+                # (s,a,r,s') in replay buffer
+                memory.add(s, a, reward, ns)
 
-            # Updating new state
-            if terminated:
-                print(f"episode end, total reward: {total_reward}")
-                self._espilon_update()
-                s, _ = self.env.reset()
-            else:
-                s = ns
+                # get a sample batch for training
+                if ( len(memory) > 64 ):
+                    batch = memory.sample(self.batch_dimension)
+                    # Preparing the batch
+                    training_set = self._prepareBatch(batch, q_network)
+                    q_network.train(training_set)
+
+                # Updating new state
+                if terminated:
+                    self._espilon_update()
+                    s, _ = self.env.reset()
+                else:
+                    s = ns
+
+        self._save_policy(q_network)
+
+    def _save_policy(self, q_network : DQN):
+        # Policy saving. Weigths of the neural network
+        q_network.model.save_weights(self.policy_name)
+
+    def _load_policy(self, q_network : DQN):
+        # Policy loading
+        q_network.model.load_weights(self.policy_name)
+
+    def run_policy(self):
+        # NN for Q-Values already trained
+        q_network = DQN(8, self.env.action_space.n)
+        self._load_policy(q_network)
         
+        total_reward = 0
+        episodes_reward = []
+        n_episodes = 1000
+
+        for i in range(0,n_episodes):
+            s, _ = self.env.reset()
+            
+            terminated = truncated = False
+            rw = 0
+
+            while not (terminated or truncated):
+                # Retrieve the action with maximum q_value
+                q_values = q_network.predict_qValue(s)[0]
+                a = np.argmax(q_values)
+
+                ns, r, terminated, truncated, _ = self.env.step(a)
+                rw += r
+                s = ns
+
+            total_reward += rw
+            episodes_reward.append(rw)
+            print(f"Episode {i}: final state = {s}, total reward = {rw:.2f}")
+        
+        print(f"Mean Reward: {total_reward/n_episodes}")
+        print(f"Mean Episode Reward: {np.mean(episodes_reward)}")
+
 
 
 if __name__ == "__main__":
-    # Lunar Lander Environment
-    #env = gym.make('FrozenLake-v1', desc=None, map_name="4x4", is_slippery=True)
-    #env = gym.make('FrozenLake-v1', desc=["FFFH", "HGHF", "FFFF", "SFHF"], map_name=None, is_slippery=False)
-    #env = gym.make('FrozenLake-v1', render_mode="human", desc=generate_random_map(size=5), is_slippery=True)
-    pass
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     
+    # Lunar Lander Environment
+    env = gym.make("LunarLander-v3", render_mode="human", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
+    
+    # Training
+    ql = QLearner(env)
+    ql.DQN_Learning()
+
+    #ql.run_policy()
