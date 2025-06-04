@@ -227,8 +227,8 @@ if __name__ == "__main__":
             plt.plot(np.convolve(rw_random, np.ones(2000)/2000), label='Random policy')
             plt.show()
         elif policy == "2": # Both policies
-            rw_eps = ql.DQN_Learning()
             rw_random = ql.DQN_Learning(1)
+            rw_eps = ql.DQN_Learning()
             np.save("./policy/reward_files_dqn", rw_eps)
             plt.plot(np.convolve(rw_random, np.ones(2000)/2000), label='Random policy', color="green")
             plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000', color="red")

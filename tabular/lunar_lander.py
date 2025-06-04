@@ -139,7 +139,7 @@ class QLearner():
 
             total_reward += rw
             episodes_reward.append(rw)
-            print(f"Episode {i}: final state = {s}, total reward = {rw:.2f}")
+            print(f"({i}: rw={rw:.2f})")
         
         print(f"Mean Reward: {total_reward/n_episodes}")
         print(f"Mean Episode Reward: {np.mean(episodes_reward)}")
@@ -169,13 +169,13 @@ if __name__ == "__main__":
             plt.show()
         elif policy == "1": # Random policy
             rw_random = ql.tabular_QLearning(1)
-            plt.plot(np.convolve(rw_random, np.ones(2000)/2000), label='Random policy')
+            plt.plot(np.convolve(rw_random, np.ones(1000)/1000), label='Random policy')
             plt.show()
         elif policy == "2": # Both policies
-            rw_eps = ql.tabular_QLearning()
             rw_random = ql.tabular_QLearning(1)
+            rw_eps = ql.tabular_QLearning()
             np.save("./policy/reward_files", rw_eps)
-            plt.plot(np.convolve(rw_random, np.ones(2000)/2000), label='Random policy', color="green")
+            plt.plot(np.convolve(rw_random, np.ones(1000)/1000), label='Random policy', color="green")
             plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000', color="red")
             plt.show()
         else:
