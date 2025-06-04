@@ -58,7 +58,7 @@ class DQN:
 
     
 class QLearner():
-    def __init__(self, env:gym.Env, max_episodes=1500, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999):
+    def __init__(self, env:gym.Env, max_episodes=500, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -100,7 +100,7 @@ class QLearner():
 
         return training_set
 
-    def _normalizeState(self, state):
+    def _normalize(self, state):
         amplitudes = [ 2.5, 2.5, 10., 10., 6.2831855, 10., 1., 1.]
         result = state/amplitudes 
         return result
