@@ -1,5 +1,5 @@
 # Authors: Matteo Ventali and Valerio Spagnoli
-# ML Project : DQN for Frozen Lake envinronment
+# ML Project : DQN for Lunar Lander envinronment
 
 import os
 import numpy as np
@@ -14,6 +14,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.models import Sequential #type: ignore
 from tensorflow.keras.layers import Dense, Normalization #type: ignore
+
 
 class ReplayBuffer:
     def __init__(self, capacity):
@@ -54,7 +55,7 @@ class DQN:
         self.normalizationLayer.adapt(states)
 
         # Fit
-        self.model.fit(states, q_targets, epochs=100)
+        self.model.fit(states, q_targets, epochs=1)
 
     def predict_qValue(self, state):
         # Computing the q_value for the state received
@@ -72,18 +73,19 @@ class QLearner():
         self.end_eps = end_eps
         self.eps = start_eps
         self.eps_decay = eps_decay
-        self.batch_dimension = 64
-        self.policy_name = "dqn_policy.weights.h5"
+        self.batch_dimension = 128
+        self.policy_name = "dqn_model.keras"
         
     def _espilon_update(self):
         self.eps = max(self.eps_decay * self.eps, self.end_eps)
 
-    def _next_action(self, current_state):
+    def _next_action(self, current_state, q_network : DQN):
         n = ran.random()
         if n < self.eps: # Exploration
             return ran.randint(0,self.env.action_space.n - 1)
         else: # Exploitation
-            return np.argmax(self.q_table[current_state])
+            q_values = q_network.predict_qValue(current_state)[0]
+            a = np.argmax(q_values)
 
     def _prepareBatch(self, batch, q_network : DQN):
         training_set = [] # Result of preparing the data
@@ -118,7 +120,7 @@ class QLearner():
             truncated = terminated = False
             while not (truncated or terminated):
                 # Select the action to be executed
-                a = self._next_action(s)
+                a = self._next_action(s, q_network)
 
                 # Execution of a
                 ns, reward, terminated, truncated, _ = self.env.step(a)
@@ -127,7 +129,7 @@ class QLearner():
                 memory.add(s, a, reward, ns)
 
                 # get a sample batch for training
-                if ( len(memory) > 64 ):
+                if ( len(memory) > self.batch_dimension ):
                     batch = memory.sample(self.batch_dimension)
                     # Preparing the batch
                     training_set = self._prepareBatch(batch, q_network)
@@ -144,11 +146,11 @@ class QLearner():
 
     def _save_policy(self, q_network : DQN):
         # Policy saving. Weigths of the neural network
-        q_network.model.save_weights(self.policy_name)
+        q_network.model.save(self.model_name)
 
     def _load_policy(self, q_network : DQN):
         # Policy loading
-        q_network.model.load_weights(self.policy_name)
+        q_network.model.save(self.model_name)
 
     def run_policy(self):
         # NN for Q-Values already trained
@@ -187,7 +189,7 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     
     # Lunar Lander Environment
-    env = gym.make("LunarLander-v3", render_mode="human", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
+    env = gym.make("LunarLander-v3", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
     
     # Training
     ql = QLearner(env)
