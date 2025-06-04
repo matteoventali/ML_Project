@@ -2,6 +2,7 @@
 # ML Project : DQN for Lunar Lander envinronment
 
 import os
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import gymnasium as gym
@@ -58,7 +59,7 @@ class DQN:
 
     
 class QLearner():
-    def __init__(self, env:gym.Env, max_episodes=500, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999):
+    def __init__(self, env:gym.Env, max_episodes=500, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999, model_name="dqn_model.keras"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -67,7 +68,7 @@ class QLearner():
         self.eps = start_eps
         self.eps_decay = eps_decay
         self.batch_dimension = 64
-        self.model_name = "dqn_model.keras"
+        self.model_name = "./dqn_models/" + model_name
         
     def _espilon_update(self):
         self.eps = max(self.eps_decay * self.eps, self.end_eps)
@@ -203,8 +204,38 @@ if __name__ == "__main__":
     # Lunar Lander Environment
     env = gym.make("LunarLander-v3", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
     
-    # Training
-    ql = QLearner(env)
-    ql.DQN_Learning()
+    # Menu
+    mode = input("Select modality (0 = training, 1 = running): ").strip()
+    model_file = input("File model (empty for default):").strip()
 
-    #ql.run_policy()
+    # Learner object
+    if model_file == "": # Apply default name
+        ql = QLearner(env)
+    else:
+        ql = QLearner(env, model_name=model_file)
+
+    if mode == "0": # Training
+        policy = input("Select policy (0 = epsilon-greedy, 1 = random, 2 = combined): ").strip()
+        
+        if policy == "0": # Epsilon-Greedy policy
+            rw_eps, mean_eps = ql.DQN_Learning()
+            np.save("./tabular/policies/reward_files", rw_eps)
+            plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000', color="red")
+            plt.show()
+        elif policy == "1": # Random policy
+            rw_random = ql.tabular_QLearning(1)
+            plt.plot(np.convolve(rw_random, np.ones(2000)/2000), label='Random policy')
+            plt.show()
+        elif policy == "2": # Both policies
+            rw_eps = ql.DQN_Learning()
+            rw_random = ql.DQN_Learning(1)
+            np.save("./tabular/policies/reward_files", rw_eps)
+            plt.plot(np.convolve(rw_random, np.ones(2000)/2000), label='Random policy', color="green")
+            plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000', color="red")
+            plt.show()
+        else:
+            print("Policy not valid")
+    elif mode == "1": # Running
+        ql.run_policy()
+    else:
+        print("Input not valid")
