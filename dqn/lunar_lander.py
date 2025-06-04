@@ -218,7 +218,7 @@ if __name__ == "__main__":
         policy = input("Select policy (0 = epsilon-greedy, 1 = random, 2 = combined): ").strip()
         
         if policy == "0": # Epsilon-Greedy policy
-            rw_eps, mean_eps = ql.DQN_Learning()
+            rw_eps= ql.DQN_Learning()
             np.save("./tabular/policies/reward_files", rw_eps)
             plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000', color="red")
             plt.show()

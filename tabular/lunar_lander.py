@@ -72,7 +72,6 @@ class QLearner():
 
         # Array for collecting total rewards
         total_rewards = []
-        mean_values = []
         
         # Training of episodes
         for n_episode in range(self.max_episodes):
@@ -104,17 +103,14 @@ class QLearner():
             s, _ = self.env.reset()
             s = discretize(s)
             total_rewards.append(episode_reward)
-            if len(total_rewards) >= 50:
-                mean_values = np.mean(total_rewards[-50:])
-
-
+            
         # Dump q_table
         with open(self.policy_name, "wb") as f:
             pickle.dump(dict(ql.q_table), f)
 
-        return total_rewards, mean_values
-            
-
+        return total_rewards
+    
+    
     def load_policy(self):
         with open(self.policy_name, "rb") as f:
             self.policy = defaultdict(lambda: np.zeros(self.env.action_space.n),pickle.load(f))
@@ -167,7 +163,7 @@ if __name__ == "__main__":
         policy = input("Select policy (0 = epsilon-greedy, 1 = random, 2 = combined): ").strip()
         
         if policy == "0": # Epsilon-Greedy policy
-            rw_eps, mean_eps = ql.tabular_QLearning()
+            rw_eps = ql.tabular_QLearning()
             np.save("./tabular/policies/reward_files", rw_eps)
             plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000', color="red")
             plt.show()
