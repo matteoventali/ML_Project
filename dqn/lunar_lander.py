@@ -73,7 +73,7 @@ class QLearner():
         self.end_eps = end_eps
         self.eps = start_eps
         self.eps_decay = eps_decay
-        self.batch_dimension = 128
+        self.batch_dimension = 64
         self.policy_name = "dqn_model.keras"
         
     def _espilon_update(self):
@@ -116,7 +116,12 @@ class QLearner():
         # Starting of the environment
         s, _ = self.env.reset()
 
-        for n_episodes in range(self.max_episodes):
+        # Array for collecting total rewards
+        total_rewards = []
+
+        for n_episode in range(self.max_episodes):
+            print(f"Episode n: {n_episode}")
+            
             truncated = terminated = False
             while not (truncated or terminated):
                 # Select the action to be executed
@@ -124,6 +129,7 @@ class QLearner():
 
                 # Execution of a
                 ns, reward, terminated, truncated, _ = self.env.step(a)
+                episode_reward += reward
                 
                 # (s,a,r,s') in replay buffer
                 memory.add(s, a, reward, ns)
@@ -141,6 +147,12 @@ class QLearner():
                     s, _ = self.env.reset()
                 else:
                     s = ns
+            
+            # Stats of the episode
+            print(f"(episode {n_episode} {episode_reward})")
+            self._espilon_update()
+            s, _ = self.env.reset()
+            total_rewards.append(episode_reward)
 
         self._save_policy(q_network)
 
