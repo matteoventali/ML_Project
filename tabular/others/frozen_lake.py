@@ -11,9 +11,9 @@ from pprint import pprint
 from gymnasium.envs.toy_text.frozen_lake import generate_random_map
 
 class QLearner():
-    def __init__(self, env:gym.Env, max_steps=5000000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.9999):
+    def __init__(self, env:gym.Env, max_episodes=50000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999):
         self.env = env
-        self.max_steps = max_steps        
+        self.max_episodes = max_episodes        
         self.gamma = gamma
         self.alpha = alpha
         self.end_eps = end_eps
@@ -45,33 +45,36 @@ class QLearner():
         # Starting of the environment
         s, _ = self.env.reset()
 
-        total_reward = 0
-        
-        for n_step in range(self.max_steps):
-            print(f"step n: {n_step}")
-            # Select the action to be executed
-            a = self._next_action(s)
+        total_reward = []
 
-            # Execution of a
-            ns, reward, terminated, _, _ = self.env.step(a)
-            total_reward += reward
-            
-            # Update Q_table
-            # Q(s,a) = (1 - alpha)*Q(s,a) + alpha*[r + y max_a'{Q(s',a')}]
-            # Q(s,a) = Q(s,a) + alpha[r + y*max_a'{Q(s',a')} - Q(s,a)]
-            self.q_table[s][a] += self.alpha * (reward + self.gamma * max(self.q_table[ns]) - self.q_table[s][a])
+        for episode in range(0, self.max_episodes):
+            terminated = truncated = False
+            while not (terminated or truncated):
+                # Select the action to be executed
+                a = self._next_action(s)
 
-            # Updating new state
-            if terminated:
-                print(f"episode end, total reward: {total_reward}")
-                self._espilon_update()
-                s, _ = self.env.reset()
-            else:
-                s = ns
+                # Execution of a
+                ns, reward, terminated, truncated, _ = self.env.step(a)
+                
+                # Update Q_table
+                # Q(s,a) = (1 - alpha)*Q(s,a) + alpha*[r + y max_a'{Q(s',a')}]
+                # Q(s,a) = Q(s,a) + alpha[r + y*max_a'{Q(s',a')} - Q(s,a)]
+                self.q_table[s][a] += self.alpha * (reward + self.gamma * max(self.q_table[ns]) - self.q_table[s][a])
+
+                # Updating new state
+                if terminated or truncated:
+                    total_reward.append(reward)
+                    print(f"Reward episode: {reward}")
+                    self._espilon_update()
+                    s, _ = self.env.reset()
+                else:
+                    s = ns
         
         # Dump q_table
         with open(self.policy_name, "wb") as f:
             pickle.dump(dict(ql.q_table), f)
+
+        return total_reward
 
     
     def load_policy(self):
@@ -110,5 +113,5 @@ if __name__ == "__main__":
     #env = gym.make('FrozenLake-v1', render_mode="human", desc=generate_random_map(size=5), is_slippery=True)
 
     ql = QLearner(env)
-    #ql.tabular_QLearning()
-    ql.run_policy()
+    print(ql.tabular_QLearning()[-50:])
+    #ql.run_policy()
