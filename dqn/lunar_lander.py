@@ -20,8 +20,8 @@ class ReplayBuffer:
     def __init__(self, capacity):
         self.buffer = deque(maxlen=capacity)
 
-    def add(self, state, action, reward, next_state):
-        data = (state, action, reward, next_state) 
+    def add(self, state, action, reward, next_state, done):
+        data = (state, action, reward, next_state, done) 
         self.buffer.append(data)
 
     def sample(self, batch_size):
@@ -34,33 +34,26 @@ class ReplayBuffer:
 
 class DQN:
     def __init__(self, state_dim, num_actions):
-        # Normalization layer
-        self.normalizationLayer = Normalization(input_shape=(state_dim,))
-        
         # Creation of the neural network
         self.model = Sequential([
-            self.normalizationLayer,
-            Dense(64, activation='relu'),
+            Dense(64, activation='relu', input_shape=(8,)),
             Dense(64, activation='relu'),
             Dense(num_actions)  # output: Q(s,a) for all a
         ])
-        self.model.compile(loss='mean_absolute_error', optimizer=tf.keras.optimizers.Adam(0.001))
+        self.model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(0.001))
 
     def train(self, batch):
         # Preparing the batch separating the state and the target values
         states = np.array([s for s, q in batch])   
         q_targets = np.array([q for s, q in batch])
 
-        # Adapt of the state
-        self.normalizationLayer.adapt(states)
-
         # Fit
-        self.model.fit(states, q_targets, epochs=1)
+        self.model.fit(states, q_targets)
 
     def predict_qValue(self, state):
         # Computing the q_value for the state received
         state_input = np.expand_dims(state, axis=0)
-        q_values = self.model.predict(state_input, verbose=0)
+        q_values = self.model.predict_on_batch(state_input)
         return q_values
 
     
@@ -92,7 +85,7 @@ class QLearner():
         training_set = [] # Result of preparing the data
         
         # Preparing the batch
-        for t in batch: # (s, a, r, s')
+        for t in batch: # (s, a, r, s', done)
             # Q(s,a) and Q(s',a) forall action a
             q_values_s = q_network.predict_qValue(t[0])[0]
             q_values_ns = q_network.predict_qValue(t[3])[0]
@@ -101,11 +94,16 @@ class QLearner():
             # Updating only in corrispondence of the action
             action = int(t[1])
             row = (t[0], q_values_s)
-            row[1][action] = q_values_s[action] + self.alpha * (t[2] + self.gamma * np.max(q_values_ns) - q_values_s[action])
+            row[1][action] = q_values_s[action] + self.alpha * (t[2] * (1 - int(t[4])) + self.gamma * np.max(q_values_ns) - q_values_s[action])
             
             training_set.append(row)
 
         return training_set
+
+    def _normalizeState(self, state):
+        amplitudes = [ 2.5, 2.5, 10., 10., 6.2831855, 10., 1., 1.]
+        result = state/amplitudes 
+        return result
 
     def DQN_Learning(self):
         # Creation of the NN representing the Q-table
@@ -131,9 +129,10 @@ class QLearner():
                 # Execution of a
                 ns, reward, terminated, truncated, _ = self.env.step(a)
                 episode_reward += reward
+                done = terminated or truncated
                 
                 # (s,a,r,s') in replay buffer
-                memory.add(s, a, reward, ns)
+                memory.add(self._normalize(s), a, reward, self._normalize(ns), done)
 
                 # get a sample batch for training
                 if ( len(memory) > self.batch_dimension ):

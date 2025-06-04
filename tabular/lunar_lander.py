@@ -151,18 +151,18 @@ if __name__ == "__main__":
     
     # Training
     ql = QLearner(env)
-    rw_random = ql.tabular_QLearning(0)
-    print("\nRestarting training")
-    rw_eps = ql.tabular_QLearning()
-    np.save("./tabular/policies/reward_files", rw_eps)
+    #rw_random = ql.tabular_QLearning(0)
+    #print("\nRestarting training")
+    #rw_eps = ql.tabular_QLearning()
+    #np.save("./tabular/policies/reward_files", rw_eps)
     
     # Results plot
-    plt.plot(np.convolve(rw_random, np.ones(2000)/2000), label='Random policy')
+    #plt.plot(np.convolve(rw_random, np.ones(2000)/2000), label='Random policy')
     #plt.plot(np.convolve(rw_eps, np.ones(50)/50), label='Epsilon Greedy policy 50')
     #plt.plot(np.convolve(rw_eps, np.ones(500)/500), label='Epsilon Greedy policy 500')
     #plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000')
-    plt.plot(np.convolve(rw_eps, np.ones(2000)/2000, mode="valid"), label='Epsilon Greedy policy 2000')
+    #plt.plot(np.convolve(rw_eps, np.ones(2000)/2000, mode="valid"), label='Epsilon Greedy policy 2000')
     #plt.plot(np.convolve(rw_eps, np.ones(2500)/2500, mode="valid"), label='Epsilon Greedy policy 2500')
-    plt.show()
+    #plt.show()
 
-    #ql.run_policy()
+    ql.run_policy()
