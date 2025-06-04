@@ -59,7 +59,7 @@ class DQN:
 
     
 class QLearner():
-    def __init__(self, env:gym.Env, max_episodes=500, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999, model_name="dqn_model.keras"):
+    def __init__(self, env:gym.Env, max_episodes=3000, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999, model_name="dqn_model.keras"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -219,7 +219,7 @@ if __name__ == "__main__":
         
         if policy == "0": # Epsilon-Greedy policy
             rw_eps= ql.DQN_Learning()
-            np.save("./tabular/policies/reward_files", rw_eps)
+            np.save("./policy/reward_files_dqn", rw_eps)
             plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000', color="red")
             plt.show()
         elif policy == "1": # Random policy
@@ -229,7 +229,7 @@ if __name__ == "__main__":
         elif policy == "2": # Both policies
             rw_eps = ql.DQN_Learning()
             rw_random = ql.DQN_Learning(1)
-            np.save("./tabular/policies/reward_files", rw_eps)
+            np.save("./policy/reward_files_dqn", rw_eps)
             plt.plot(np.convolve(rw_random, np.ones(2000)/2000), label='Random policy', color="green")
             plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000', color="red")
             plt.show()

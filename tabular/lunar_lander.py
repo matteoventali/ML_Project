@@ -164,7 +164,7 @@ if __name__ == "__main__":
         
         if policy == "0": # Epsilon-Greedy policy
             rw_eps = ql.tabular_QLearning()
-            np.save("./tabular/policies/reward_files", rw_eps)
+            np.save("./policy/reward_files", rw_eps)
             plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000', color="red")
             plt.show()
         elif policy == "1": # Random policy
@@ -174,7 +174,7 @@ if __name__ == "__main__":
         elif policy == "2": # Both policies
             rw_eps = ql.tabular_QLearning()
             rw_random = ql.tabular_QLearning(1)
-            np.save("./tabular/policies/reward_files", rw_eps)
+            np.save("./policy/reward_files", rw_eps)
             plt.plot(np.convolve(rw_random, np.ones(2000)/2000), label='Random policy', color="green")
             plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000', color="red")
             plt.show()
