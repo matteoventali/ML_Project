@@ -65,7 +65,7 @@ class DQN:
 
     
 class QLearner():
-    def __init__(self, env:gym.Env, max_episodes=10000, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999):
+    def __init__(self, env:gym.Env, max_episodes=1500, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -74,7 +74,7 @@ class QLearner():
         self.eps = start_eps
         self.eps_decay = eps_decay
         self.batch_dimension = 64
-        self.policy_name = "dqn_model.keras"
+        self.model_name = "dqn_model.keras"
         
     def _espilon_update(self):
         self.eps = max(self.eps_decay * self.eps, self.end_eps)
@@ -86,6 +86,7 @@ class QLearner():
         else: # Exploitation
             q_values = q_network.predict_qValue(current_state)[0]
             a = np.argmax(q_values)
+            return a
 
     def _prepareBatch(self, batch, q_network : DQN):
         training_set = [] # Result of preparing the data
@@ -121,7 +122,7 @@ class QLearner():
 
         for n_episode in range(self.max_episodes):
             print(f"Episode n: {n_episode}")
-            
+            episode_reward = 0
             truncated = terminated = False
             while not (truncated or terminated):
                 # Select the action to be executed
@@ -162,7 +163,7 @@ class QLearner():
 
     def _load_policy(self, q_network : DQN):
         # Policy loading
-        q_network.model.save(self.model_name)
+        q_network.model.load(self.model_name)
 
     def run_policy(self):
         # NN for Q-Values already trained
