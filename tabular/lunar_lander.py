@@ -35,7 +35,7 @@ def discretize(obs):
     
 
 class QLearner():
-    def __init__(self, env:gym.Env, max_episodes=10000, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999):
+    def __init__(self, env:gym.Env, max_episodes=30000, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -151,16 +151,18 @@ if __name__ == "__main__":
     
     # Training
     ql = QLearner(env)
-    #rw_random = ql.tabular_QLearning(0)
-    #print("\nRestarting training")
+    rw_random = ql.tabular_QLearning(0)
+    print("\nRestarting training")
     rw_eps = ql.tabular_QLearning()
-    np.save('../tabular/policies/reward_files', rw_eps)
-    #
-    ## Results plot
-    #plt.plot(np.convolve(rw_random, np.ones(50)/50), label='Random policy')
-    plt.plot(np.convolve(rw_eps, np.ones(50)/50), label='Epsilon Greedy policy 50')
-    plt.plot(np.convolve(rw_eps, np.ones(500)/500), label='Epsilon Greedy policy 500')
-    plt.plot(np.convolve(rw_eps, np.ones(1000)/1000), label='Epsilon Greedy policy 1000')
+    np.save("./tabular/policies/reward_files", rw_eps)
+    
+    # Results plot
+    plt.plot(np.convolve(rw_random, np.ones(2000)/2000), label='Random policy')
+    #plt.plot(np.convolve(rw_eps, np.ones(50)/50), label='Epsilon Greedy policy 50')
+    #plt.plot(np.convolve(rw_eps, np.ones(500)/500), label='Epsilon Greedy policy 500')
+    #plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000')
+    plt.plot(np.convolve(rw_eps, np.ones(2000)/2000, mode="valid"), label='Epsilon Greedy policy 2000')
+    #plt.plot(np.convolve(rw_eps, np.ones(2500)/2500, mode="valid"), label='Epsilon Greedy policy 2500')
     plt.show()
 
     #ql.run_policy()
