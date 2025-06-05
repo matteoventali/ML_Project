@@ -1,7 +1,7 @@
 # Authors: Matteo Ventali and Valerio Spagnoli
 # ML Project : DQN for Lunar Lander envinronment
 
-from google.colab import drive
+#from google.colab import drive
 import os
 import matplotlib.pyplot as plt
 import numpy as np
@@ -38,8 +38,8 @@ class DQN:
     def __init__(self, state_dim, num_actions):
         # Creation of the neural network
         self.model = Sequential([
-            Dense(64, activation='relu', input_shape=(8,)),
-            Dense(64, activation='relu'),
+            Dense(32, activation='relu', input_shape=(8,)),
+            Dense(32, activation='relu'),
             Dense(num_actions)  # output: Q(s,a) for all a
         ])
         self.model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(0.001))
@@ -50,7 +50,7 @@ class DQN:
         q_targets = np.array([q for s, q in batch])
 
         # Fit
-        self.model.fit(states, q_targets)
+        self.model.fit(states, q_targets, verbose=0)
 
     def predict_qValue(self, state):
         # Computing the q_value for the state received
@@ -60,7 +60,7 @@ class DQN:
 
     
 class QLearner():
-    def __init__(self, env:gym.Env, max_episodes=3000, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999, model_name="dqn_model.keras"):
+    def __init__(self, env:gym.Env, max_episodes=1000, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999, model_name="dqn_model.keras"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -68,7 +68,7 @@ class QLearner():
         self.end_eps = end_eps
         self.eps = start_eps
         self.eps_decay = eps_decay
-        self.batch_dimension = 64
+        self.batch_dimension = 32
         self.model_name = "./dqn_models/" + model_name
         
     def _espilon_update(self):
@@ -198,7 +198,7 @@ class QLearner():
 
 
 if __name__ == "__main__":
-    #os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     #drive.mount('/content/drive')
     #output_dir = "/content/drive/MyDrive/reward_files_dqn/"
