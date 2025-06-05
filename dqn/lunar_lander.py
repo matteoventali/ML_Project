@@ -95,7 +95,7 @@ class QLearner():
             # Updating only in corrispondence of the action
             action = int(t[1])
             row = (t[0], q_values_s)
-            row[1][action] = q_values_s[action] + self.alpha * (t[2] * (1 - int(t[4])) + self.gamma * np.max(q_values_ns) - q_values_s[action])
+            row[1][action] = q_values_s[action] + self.alpha * (t[2] + self.gamma * np.max(q_values_ns) * (1 - int(t[4])) - q_values_s[action])
             
             training_set.append(row)
 
