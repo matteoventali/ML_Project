@@ -197,7 +197,8 @@ class QLearner():
             s, _ = self.env.reset()
             total_rewards.append(episode_reward)
 
-        self._save_policy(q_network)
+        if modality == 1:
+            self._save_policy(q_network)
         return total_rewards
 
     def _save_policy(self, q_network : DQN):

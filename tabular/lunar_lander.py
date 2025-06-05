@@ -77,7 +77,7 @@ def discretize(obs):
     
 
 class QLearner():
-    def __init__(self, env:gym.Env, max_episodes=10, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999, policy_name="policy_lunar_lander"):
+    def __init__(self, env:gym.Env, max_episodes=20000, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999, policy_name="policy_lunar_lander"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -150,8 +150,9 @@ class QLearner():
             
             
         # Dump q_table
-        with open(self.policy_name, "wb") as f:
-            pickle.dump(dict(ql.q_table), f)
+        if modality == 1:
+            with open(self.policy_name, "wb") as f:
+                pickle.dump(dict(ql.q_table), f)
 
         return np.array(total_rewards), np.array(eps_per_episode)
     
