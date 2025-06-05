@@ -84,7 +84,7 @@ class DQN:
             Dense(32, activation='relu'),
             Dense(num_actions)  # output: Q(s,a) for all a
         ])
-        self.model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(0.001))
+        self.model.compile(loss='mse', optimizer=tf.keras.optimizers.Adam(0.001))
 
     def train(self, batch):
         # Preparing the batch separating the state and the target values
@@ -102,7 +102,7 @@ class DQN:
 
     
 class QLearner():
-    def __init__(self, env:gym.Env, max_episodes=1, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999, model_name="dqn_model.keras"):
+    def __init__(self, env:gym.Env, max_episodes=3000, gamma=0.95, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.995, model_name="dqn_model.keras"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -122,7 +122,7 @@ class QLearner():
             return self.env.action_space.sample()
         else: # Exploitation
             q_values = q_network.predict_qValue(current_state)[0]
-            a = np.argmax(q_values)
+            a = np.argmax(q_values).item()
             return a
 
     def _prepareBatch(self, batch, q_network : DQN):
@@ -146,10 +146,10 @@ class QLearner():
 
     def _normalize(self, state):
         amplitudes = [ 2.5, 2.5, 10., 10., 6.2831855, 10., 1., 1.]
-        result = state/amplitudes 
+        result = state / amplitudes 
         return result
 
-    def DQN_Learning(self, modality=1):
+    def DQN_Learning(self, modality=1): 
         self.eps = 1.0
 
         # Creation of the NN representing the Q-table
@@ -169,20 +169,22 @@ class QLearner():
             print(f"Episode n: {n_episode}")
             episode_reward = 0
             done = False
+            n_steps = 0
             while not done:
                 # Select the action to be executed
                 a = self._next_action(modality, s, q_network)
 
                 # Execution of a
                 ns, reward, terminated, truncated, _ = self.env.step(a)
+                n_steps+=1
                 episode_reward += reward
                 done = terminated or truncated
                 
-                # (s,a,r,s') in replay buffer
+                # (s,a,r,s',done) in replay buffer
                 memory.add(self._normalize(s), a, reward, self._normalize(ns), done)
 
                 # get a sample batch for training
-                if ( len(memory) > self.batch_dimension ):
+                if ( len(memory) > self.batch_dimension and done ):
                     batch = memory.sample(self.batch_dimension)
                     # Preparing the batch
                     training_set = self._prepareBatch(batch, q_network)
@@ -209,7 +211,7 @@ class QLearner():
 
     def _load_policy(self, q_network : DQN):
         # Policy loading
-        q_network.model.load(self.model_name + ".keras")
+        q_network.model = tf.keras.models.load_model(self.model_name + ".keras")
 
     def run_policy(self):
         # NN for Q-Values already trained
@@ -237,7 +239,7 @@ class QLearner():
 
             total_reward += rw
             episodes_reward.append(rw)
-            print(f"Episode {i}: final state = {s}, total reward = {rw:.2f}")
+            print(f"({i}: rw={rw:.2f})")
         
         print(f"Mean Reward: {total_reward/n_episodes}")
         print(f"Mean Episode Reward: {np.mean(episodes_reward)}")

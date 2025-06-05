@@ -90,7 +90,6 @@ class QLearner():
     def _espilon_update(self):
         self.eps = max(self.eps_decay * self.eps, self.end_eps)
 
-    
     def _next_action(self, current_state, modality):
         n = ran.random()
         if modality == 0  or n < self.eps: # Exploration
@@ -98,7 +97,6 @@ class QLearner():
         else: # Exploitation
             return np.argmax(self.q_table[current_state])
 
-              
     def tabular_QLearning(self, modality=1): # 0 for random, 1 for eps-greedy policy
         # Q-table creation dynamically. It is implemented as a dictionary in which:
         # - the keys are the states (observation collected)
@@ -156,12 +154,10 @@ class QLearner():
 
         return np.array(total_rewards), np.array(eps_per_episode)
     
-    
     def load_policy(self):
         with open(self.policy_name, "rb") as f:
             self.policy = defaultdict(lambda: np.zeros(self.env.action_space.n),pickle.load(f))
         
-    
     def run_policy(self):
         self.load_policy()
         
