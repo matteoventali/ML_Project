@@ -1,6 +1,7 @@
 # Authors: Matteo Ventali and Valerio Spagnoli
 # ML Project : DQN for Lunar Lander envinronment
 
+from google.colab import drive
 import os
 import matplotlib.pyplot as plt
 import numpy as np
@@ -122,8 +123,8 @@ class QLearner():
         for n_episode in range(self.max_episodes):
             print(f"Episode n: {n_episode}")
             episode_reward = 0
-            truncated = terminated = False
-            while not (truncated or terminated):
+            done = False
+            while not done:
                 # Select the action to be executed
                 a = self._next_action(s, q_network)
 
@@ -143,14 +144,11 @@ class QLearner():
                     q_network.train(training_set)
 
                 # Updating new state
-                if terminated:
-                    self._espilon_update()
-                    s, _ = self.env.reset()
-                else:
+                if not done:
                     s = ns
             
             # Stats of the episode
-            print(f"(episode {n_episode} {episode_reward})")
+            print(f"(episode {n_episode} {episode_reward} {self.eps})")
             self._espilon_update()
             s, _ = self.env.reset()
             total_rewards.append(episode_reward)
@@ -200,7 +198,12 @@ class QLearner():
 
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+    #os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+    #drive.mount('/content/drive')
+    #output_dir = "/content/drive/MyDrive/reward_files_dqn/"
+    #os.makedirs(output_dir, exist_ok=True)
+    #os.makedirs("/content/drive/MyDrive/dqn_models/", exist_ok=True)
     
     # Lunar Lander Environment
     env = gym.make("LunarLander-v3", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
@@ -220,7 +223,8 @@ if __name__ == "__main__":
         
         if policy == "0": # Epsilon-Greedy policy
             rw_eps= ql.DQN_Learning()
-            np.save("./policy/reward_files_dqn", rw_eps)
+            #np.save("./policy/reward_files_dqn", rw_eps)
+            np.save("/content/drive/MyDrive/reward_files_dqn/reward_file", rw_eps)
             plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000', color="red")
             plt.show()
         elif policy == "1": # Random policy
@@ -230,7 +234,8 @@ if __name__ == "__main__":
         elif policy == "2": # Both policies
             rw_random = ql.DQN_Learning(1)
             rw_eps = ql.DQN_Learning()
-            np.save("./policy/reward_files_dqn", rw_eps)
+            #np.save("./policy/reward_files_dqn", rw_eps)
+            np.save("/content/drive/MyDrive/reward_files_dqn/reward_file", rw_eps)
             plt.plot(np.convolve(rw_random, np.ones(2000)/2000), label='Random policy', color="green")
             plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000', color="red")
             plt.show()

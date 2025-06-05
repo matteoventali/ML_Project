@@ -98,7 +98,7 @@ class QLearner():
                     s = ns
             
             # Stats of the episode
-            print(f"(episode {n_episode} {episode_reward})")
+            print(f"(episode {n_episode} {episode_reward} {self.eps})")
             self._espilon_update()
             s, _ = self.env.reset()
             s = discretize(s)

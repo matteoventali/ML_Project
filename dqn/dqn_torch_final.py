@@ -1,7 +1,6 @@
 # Authors: Matteo Ventali and Valerio Spagnoli
 # ML Project : DQN for Lunar Lander envinronment
 
-import os
 import matplotlib.pyplot as plt
 import numpy as np
 import gymnasium as gym
@@ -32,7 +31,7 @@ class ReplayBuffer:
 
 
 class DQN:
-    def __init__(self, state_dim, num_actions, device="cuda"):
+    def __init__(self, state_dim, num_actions, device="cpu"):
         # Creation of the neural network
         self.device = device
         self.model = nn.Sequential(
@@ -210,8 +209,6 @@ class QLearner():
 
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-    
     # Lunar Lander Environment
     env = gym.make("LunarLander-v3", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
     
