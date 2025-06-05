@@ -102,7 +102,7 @@ class DQN:
 
     
 class QLearner():
-    def __init__(self, env:gym.Env, max_episodes=3000, gamma=0.95, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.995, model_name="dqn_model.keras"):
+    def __init__(self, env:gym.Env, max_episodes=1000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.995, model_name="dqn_model.keras"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -110,7 +110,8 @@ class QLearner():
         self.end_eps = end_eps
         self.eps = start_eps
         self.eps_decay = eps_decay
-        self.batch_dimension = 32
+        self.batch_dimension = 64
+        self.bath_capacity = 50000
         self.update_every = 4
         self.model_name = "./dqn_models/" + model_name
         
@@ -157,7 +158,7 @@ class QLearner():
         q_network = DQN(8, self.env.action_space.n)
 
         # Creation of the dataset implementing the replay memory
-        memory = ReplayBuffer(10000)
+        memory = ReplayBuffer(self.bath_capacity)
 
         # Starting of the environment
         s, _ = self.env.reset()
