@@ -17,6 +17,48 @@ from tensorflow import keras
 from tensorflow.keras.models import Sequential #type: ignore
 from tensorflow.keras.layers import Dense, Normalization #type: ignore
 
+window_size = 500
+
+def function_plot(reward, epsilon_value):
+    mean_mobile = np.convolve(reward, np.ones(window_size)/window_size, mode="valid")
+
+    # Organizing the graph with two y axis
+    fig, ax1 = plt.subplots()
+
+    # First axis
+    ax1.plot(mean_mobile, color='red', label='reward_greedy_policy')
+    ax1.set_ylabel('epsilon greedy policy', color='red')
+    ax1.set_xlabel('episodes', color='blue')
+
+    # Second axis
+    ax2 = ax1.twinx()
+    ax2.plot(epsilon_value, color='orange', label='epsilon value')
+    ax2.set_ylabel('epsilon value', color='orange')
+    
+    plt.title("Reward")
+    plt.show()
+
+def function_plot_combined(reward_eps, reward_random, epsilon_value):
+    mean_mobile = np.convolve(reward_eps, np.ones(window_size)/window_size, mode="valid")
+    mean_mobile_random = np.convolve(reward_random, np.ones(window_size)/window_size, mode="valid")
+
+    # Organizing the graph with two y axis
+    fig, ax1 = plt.subplots()
+
+    # First axis
+    ax1.plot(mean_mobile, color='red', label='reward_greedy_policy')
+    ax1.plot(mean_mobile_random, color='green', label='reward_greedy_policy')
+    ax1.set_ylabel('policies', color='red')
+    ax1.set_xlabel('episodes', color='blue')
+
+    # Second axis
+    ax2 = ax1.twinx()
+    ax2.plot(epsilon_value, color='orange', label='reward_greedy_policy')
+    ax2.set_ylabel('epsilon value', color='orange')
+    
+    plt.title("Reward")
+    plt.show()
+
 
 class ReplayBuffer:
     def __init__(self, capacity):
@@ -74,9 +116,9 @@ class QLearner():
     def _espilon_update(self):
         self.eps = max(self.eps_decay * self.eps, self.end_eps)
 
-    def _next_action(self, current_state, q_network : DQN):
+    def _next_action(self, modality, current_state, q_network : DQN):
         n = ran.random()
-        if n < self.eps: # Exploration
+        if modality == 0 or n < self.eps: # Exploration
             return self.env.action_space.sample()
         else: # Exploitation
             q_values = q_network.predict_qValue(current_state)[0]
@@ -107,7 +149,9 @@ class QLearner():
         result = state/amplitudes 
         return result
 
-    def DQN_Learning(self):
+    def DQN_Learning(self, modality=1):
+        self.eps = 1.0
+
         # Creation of the NN representing the Q-table
         q_network = DQN(8, self.env.action_space.n)
 
@@ -148,7 +192,7 @@ class QLearner():
                     s = ns
             
             # Stats of the episode
-            print(f"(episode {n_episode} {episode_reward} {self.eps})")
+            print(f"(m={modality} episode {n_episode} {episode_reward} {self.eps})")
             self._espilon_update()
             s, _ = self.env.reset()
             total_rewards.append(episode_reward)
@@ -222,23 +266,17 @@ if __name__ == "__main__":
         policy = input("Select policy (0 = epsilon-greedy, 1 = random, 2 = combined): ").strip()
         
         if policy == "0": # Epsilon-Greedy policy
-            rw_eps= ql.DQN_Learning()
-            #np.save("./policy/reward_files_dqn", rw_eps)
-            np.save("/content/drive/MyDrive/reward_files_dqn/reward_file", rw_eps)
-            plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000', color="red")
-            plt.show()
+            rw_eps, eps_values = ql.DQN_Learning(1)
+            np.save("./policy/reward_files", rw_eps)
+            function_plot(rw_eps, eps_values)
         elif policy == "1": # Random policy
-            rw_random = ql.DQN_Learning(1)
-            plt.plot(np.convolve(rw_random, np.ones(2000)/2000), label='Random policy')
-            plt.show()
+            rw_random, eps_values = ql.DQN_Learning(0)
+            function_plot(rw_random, eps_values)
         elif policy == "2": # Both policies
-            rw_random = ql.DQN_Learning(1)
-            rw_eps = ql.DQN_Learning()
-            #np.save("./policy/reward_files_dqn", rw_eps)
-            np.save("/content/drive/MyDrive/reward_files_dqn/reward_file", rw_eps)
-            plt.plot(np.convolve(rw_random, np.ones(2000)/2000), label='Random policy', color="green")
-            plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000', color="red")
-            plt.show()
+            rw_random, eps_values = ql.DQN_Learning(0)
+            rw_eps, eps_values = ql.DQN_Learning(1)
+            np.save("./policy/reward_files", rw_eps)
+            function_plot_combined(rw_eps, rw_random, eps_values)
         else:
             print("Policy not valid")
     elif mode == "1": # Running
