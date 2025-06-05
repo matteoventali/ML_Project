@@ -102,7 +102,7 @@ class DQN:
 
     
 class QLearner():
-    def __init__(self, env:gym.Env, max_episodes=1000, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999, model_name="dqn_model.keras"):
+    def __init__(self, env:gym.Env, max_episodes=1, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999, model_name="dqn_model.keras"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -163,6 +163,7 @@ class QLearner():
 
         # Array for collecting total rewards
         total_rewards = []
+        eps_per_episode = []
 
         for n_episode in range(self.max_episodes):
             print(f"Episode n: {n_episode}")
@@ -170,7 +171,7 @@ class QLearner():
             done = False
             while not done:
                 # Select the action to be executed
-                a = self._next_action(s, q_network)
+                a = self._next_action(modality, s, q_network)
 
                 # Execution of a
                 ns, reward, terminated, truncated, _ = self.env.step(a)
@@ -193,21 +194,22 @@ class QLearner():
             
             # Stats of the episode
             print(f"(m={modality} episode {n_episode} {episode_reward} {self.eps})")
+            eps_per_episode.append(self.eps)
             self._espilon_update()
             s, _ = self.env.reset()
             total_rewards.append(episode_reward)
 
         if modality == 1:
             self._save_policy(q_network)
-        return total_rewards
+        return total_rewards, eps_per_episode
 
     def _save_policy(self, q_network : DQN):
         # Policy saving. Weigths of the neural network
-        q_network.model.save(self.model_name)
+        q_network.model.save(self.model_name + ".keras")
 
     def _load_policy(self, q_network : DQN):
         # Policy loading
-        q_network.model.load(self.model_name)
+        q_network.model.load(self.model_name + ".keras")
 
     def run_policy(self):
         # NN for Q-Values already trained
