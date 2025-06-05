@@ -53,7 +53,7 @@ class QLearner():
     def _next_action(self, current_state, modality):
         n = ran.random()
         if modality == 0  or n < self.eps: # Exploration
-            return ran.randint(0,self.env.action_space.n - 1)
+            return self.env.action_space.sample()
         else: # Exploitation
             return np.argmax(self.q_table[current_state])
 

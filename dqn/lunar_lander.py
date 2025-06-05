@@ -76,7 +76,7 @@ class QLearner():
     def _next_action(self, current_state, q_network : DQN):
         n = ran.random()
         if n < self.eps: # Exploration
-            return ran.randint(0,self.env.action_space.n - 1)
+            return self.env.action_space.sample()
         else: # Exploitation
             q_values = q_network.predict_qValue(current_state)[0]
             a = np.argmax(q_values)
