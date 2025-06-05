@@ -1,0 +1,252 @@
+# Authors: Matteo Ventali and Valerio Spagnoli
+# ML Project : DQN for Lunar Lander envinronment
+
+import os
+import matplotlib.pyplot as plt
+import numpy as np
+import gymnasium as gym
+import random as ran
+from gymnasium.spaces import Box
+from collections import deque
+from pprint import pprint
+from gymnasium.envs.toy_text.frozen_lake import generate_random_map
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+
+class ReplayBuffer:
+    def __init__(self, capacity):
+        self.buffer = deque(maxlen=capacity)
+
+    def add(self, state, action, reward, next_state, done):
+        data = (state, action, reward, next_state, done) 
+        self.buffer.append(data)
+
+    def sample(self, batch_size):
+        batch = ran.sample(self.buffer, batch_size)
+        return batch
+
+    def __len__(self):
+        return len(self.buffer)
+
+
+class DQN:
+    def __init__(self, state_dim, num_actions, device="cuda"):
+        # Creation of the neural network
+        self.device = device
+        self.model = nn.Sequential(
+            nn.Linear(state_dim, 64),  # input layer
+            nn.ReLU(),                 # activation
+            nn.Linear(64, 64),         # hidden layer
+            nn.ReLU(),
+            nn.Linear(64, num_actions) # output layer
+        ).to(self.device)
+        self.loss_fn = nn.MSELoss()
+        self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
+
+    def train(self, batch):
+        # Estrazione di stati e target Q-values
+        states = torch.tensor([s for s, q in batch], dtype=torch.float32).to(self.device)
+        q_targets = torch.tensor([q for s, q in batch], dtype=torch.float32).to(self.device)
+
+        # Inizio del ciclo di ottimizzazione
+        self.optimizer.zero_grad()             # azzera i gradienti
+        q_preds = self.model(states)           # forward pass
+        loss = self.loss_fn(q_preds, q_targets)  # calcolo della loss
+        loss.backward()                        # backward pass
+        self.optimizer.step() 
+
+    def predict_qValue(self, state):
+        # Trasforma lo stato in un tensore batch di forma (1, state_dim)
+        state_input = torch.tensor(state, dtype=torch.float32).unsqueeze(0).to(self.device)
+
+        # Disabilita il calcolo dei gradienti (predizione, no training)
+        with torch.no_grad():
+            q_values = self.model(state_input)
+        
+        return q_values.cpu().numpy()
+
+    
+class QLearner():
+    def __init__(self, env:gym.Env, max_episodes=3000, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999, model_name="dqn_model.keras"):
+        self.env = env
+        self.max_episodes = max_episodes        
+        self.gamma = gamma
+        self.alpha = alpha
+        self.end_eps = end_eps
+        self.eps = start_eps
+        self.eps_decay = eps_decay
+        self.batch_dimension = 64
+        self.model_name = "./dqn_models/" + model_name
+        
+    def _espilon_update(self):
+        self.eps = max(self.eps_decay * self.eps, self.end_eps)
+
+    def _next_action(self, current_state, q_network : DQN):
+        n = ran.random()
+        if n < self.eps: # Exploration
+            return self.env.action_space.sample()
+        else: # Exploitation
+            q_values = q_network.predict_qValue(current_state)[0]
+            a = np.argmax(q_values)
+            return a
+
+    def _prepareBatch(self, batch, q_network : DQN):
+        training_set = [] # Result of preparing the data
+        
+        # Preparing the batch
+        for t in batch: # (s, a, r, s', done)
+            # Q(s,a) and Q(s',a) forall action a
+            q_values_s = q_network.predict_qValue(t[0])[0]
+            q_values_ns = q_network.predict_qValue(t[3])[0]
+            
+            # Q(s,a) = Q(s,a) + alpha[r + y*max_a'{Q(s',a')} - Q(s,a)]
+            # Updating only in corrispondence of the action
+            action = int(t[1])
+            row = (t[0], q_values_s)
+            row[1][action] = q_values_s[action] + self.alpha * (t[2] + self.gamma * np.max(q_values_ns) * (1 - int(t[4])) - q_values_s[action])
+            
+            training_set.append(row)
+
+        return training_set
+
+    def _normalize(self, state):
+        amplitudes = [ 2.5, 2.5, 10., 10., 6.2831855, 10., 1., 1.]
+        result = state/amplitudes 
+        return result
+
+    def DQN_Learning(self):
+        # Creation of the NN representing the Q-table
+        q_network = DQN(8, self.env.action_space.n)
+
+        # Creation of the dataset implementing the replay memory
+        memory = ReplayBuffer(10000)
+
+        # Starting of the environment
+        s, _ = self.env.reset()
+
+        # Array for collecting total rewards
+        total_rewards = []
+
+        for n_episode in range(self.max_episodes):
+            print(f"Episode n: {n_episode}")
+            episode_reward = 0
+            truncated = terminated = False
+            while not (truncated or terminated):
+                # Select the action to be executed
+                a = self._next_action(s, q_network)
+
+                # Execution of a
+                ns, reward, terminated, truncated, _ = self.env.step(a)
+                episode_reward += reward
+                done = terminated or truncated
+                
+                # (s,a,r,s') in replay buffer
+                memory.add(self._normalize(s), a, reward, self._normalize(ns), done)
+
+                # get a sample batch for training
+                if ( len(memory) > self.batch_dimension ):
+                    batch = memory.sample(self.batch_dimension)
+                    # Preparing the batch
+                    training_set = self._prepareBatch(batch, q_network)
+                    q_network.train(training_set)
+
+                # Updating new state
+                if terminated:
+                    self._espilon_update()
+                    s, _ = self.env.reset()
+                else:
+                    s = ns
+            
+            # Stats of the episode
+            print(f"(episode {n_episode} {episode_reward})")
+            self._espilon_update()
+            s, _ = self.env.reset()
+            total_rewards.append(episode_reward)
+
+        self._save_policy(q_network)
+        return total_rewards
+
+    def _save_policy(self, q_network: DQN):
+        torch.save(q_network.model.state_dict(), self.model_name)
+
+    def _load_policy(self, q_network: DQN):
+        q_network.model.load_state_dict(torch.load(self.model_name))
+        q_network.model.eval()  # modalità eval
+
+
+    def run_policy(self):
+        # NN for Q-Values already trained
+        q_network = DQN(8, self.env.action_space.n)
+        self._load_policy(q_network)
+        
+        total_reward = 0
+        episodes_reward = []
+        n_episodes = 1000
+
+        for i in range(0,n_episodes):
+            s, _ = self.env.reset()
+            
+            terminated = truncated = False
+            rw = 0
+
+            while not (terminated or truncated):
+                # Retrieve the action with maximum q_value
+                q_values = q_network.predict_qValue(s)[0]
+                a = np.argmax(q_values)
+
+                ns, r, terminated, truncated, _ = self.env.step(a)
+                rw += r
+                s = ns
+
+            total_reward += rw
+            episodes_reward.append(rw)
+            print(f"Episode {i}: final state = {s}, total reward = {rw:.2f}")
+        
+        print(f"Mean Reward: {total_reward/n_episodes}")
+        print(f"Mean Episode Reward: {np.mean(episodes_reward)}")
+
+
+
+if __name__ == "__main__":
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+    
+    # Lunar Lander Environment
+    env = gym.make("LunarLander-v3", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
+    
+    # Menu
+    mode = input("Select modality (0 = training, 1 = running): ").strip()
+    model_file = input("File model (empty for default):").strip()
+
+    # Learner object
+    if model_file == "": # Apply default name
+        ql = QLearner(env)
+    else:
+        ql = QLearner(env, model_name=model_file)
+
+    if mode == "0": # Training
+        policy = input("Select policy (0 = epsilon-greedy, 1 = random, 2 = combined): ").strip()
+        
+        if policy == "0": # Epsilon-Greedy policy
+            rw_eps= ql.DQN_Learning()
+            np.save("./policy/reward_files_dqn", rw_eps)
+            plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000', color="red")
+            plt.show()
+        elif policy == "1": # Random policy
+            rw_random = ql.DQN_Learning(1)
+            plt.plot(np.convolve(rw_random, np.ones(2000)/2000), label='Random policy')
+            plt.show()
+        elif policy == "2": # Both policies
+            rw_random = ql.DQN_Learning(1)
+            rw_eps = ql.DQN_Learning()
+            np.save("./policy/reward_files_dqn", rw_eps)
+            plt.plot(np.convolve(rw_random, np.ones(2000)/2000), label='Random policy', color="green")
+            plt.plot(np.convolve(rw_eps, np.ones(1000)/1000, mode="valid"), label='Epsilon Greedy policy 1000', color="red")
+            plt.show()
+        else:
+            print("Policy not valid")
+    elif mode == "1": # Running
+        ql.run_policy()
+    else:
+        print("Input not valid")
