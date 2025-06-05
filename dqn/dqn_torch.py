@@ -41,7 +41,7 @@ class DQN(nn.Module):
 
 
 class QLearner:
-    def __init__(self, env, max_episodes=3000, gamma=0.99, alpha=0.001, end_eps=0.01, start_eps=1.0, eps_decay=0.995):
+    def __init__(self, env, max_episodes=3000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.995):
         self.env = env
         self.max_episodes = max_episodes
         self.gamma = gamma
@@ -52,7 +52,7 @@ class QLearner:
         self.buffer = ReplayBuffer(10000)
 
         self.q_network = DQN(env.observation_space.shape[0], env.action_space.n).to(device)
-        self.optimizer = optim.Adam(self.q_network.parameters(), lr=alpha)
+        self.optimizer = optim.Adam(self.q_network.parameters(), lr=0.001)
         self.criterion = nn.MSELoss()
 
     def _select_action(self, state):

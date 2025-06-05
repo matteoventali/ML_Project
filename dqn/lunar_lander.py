@@ -156,6 +156,7 @@ class QLearner():
             total_rewards.append(episode_reward)
 
         self._save_policy(q_network)
+        return total_rewards
 
     def _save_policy(self, q_network : DQN):
         # Policy saving. Weigths of the neural network
