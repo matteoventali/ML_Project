@@ -15,7 +15,7 @@ from gymnasium.envs.toy_text.frozen_lake import generate_random_map
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.models import Sequential #type: ignore
-from tensorflow.keras.layers import Dense, Normalization #type: ignore
+from tensorflow.keras.layers import Dense #type: ignore
 
 window_size = 500
 
