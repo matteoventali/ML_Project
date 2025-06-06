@@ -168,7 +168,7 @@ class QLearner():
         eps_per_episode = []
 
         for n_episode in range(self.max_episodes):
-            print(f"Episode n: {n_episode}")
+            #print(f"Episode n: {n_episode}")
             episode_reward = 0
             done = False
             n_steps = 0
@@ -197,7 +197,8 @@ class QLearner():
                     s = ns
             
             # Stats of the episode
-            print(f"(m={modality} episode {n_episode} {episode_reward} {self.eps})")
+            if n_episode % 50 == 0:
+                print(f"(m={modality} episode {n_episode} {episode_reward} {self.eps})")
             eps_per_episode.append(self.eps)
             self._espilon_update()
             s, _ = self.env.reset()
@@ -250,6 +251,8 @@ class QLearner():
 
 if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+    tf.config.threading.set_intra_op_parallelism_threads(4)
+    tf.config.threading.set_inter_op_parallelism_threads(2)
 
     #drive.mount('/content/drive')
     #output_dir = "/content/drive/MyDrive/reward_files_dqn/"
