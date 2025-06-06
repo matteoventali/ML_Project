@@ -100,7 +100,7 @@ class DQN:
 
 
 class QLearner():
-    def __init__(self, env: gym.Env, max_episodes=5000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.9995, model_name="dqn_model.pth"):
+    def __init__(self, env: gym.Env, max_episodes=10, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.9995, model_name="dqn_model.pth"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -116,12 +116,14 @@ class QLearner():
     def _espilon_update(self):
         self.eps = max(self.eps_decay * self.eps, self.end_eps)
 
-    def _next_action(self, current_state, q_network: DQN):
-        if ran.random() < self.eps:
+    def _next_action(self, modality, current_state, q_network : DQN):
+        n = ran.random()
+        if modality == 0 or n < self.eps: # Exploration
             return self.env.action_space.sample()
-        else:
+        else: # Exploitation
             q_values = q_network.predict_qValue(current_state)[0]
-            return int(np.argmax(q_values))
+            a = np.argmax(q_values).item()
+            return a
 
     def _prepareBatch(self, batch, q_network: DQN):
         training_set = [] # Result of preparing the data
@@ -196,7 +198,7 @@ class QLearner():
             self._espilon_update()
             s, _ = self.env.reset()
             total_rewards.append(episode_reward)
-            if n_episode % 50 == 0:
+            if n_episode > 50:
                 print(f"(m={modality} episode {n_episode} {np.mean(total_rewards[-50:])} {self.eps})")
 
         if modality == 1:
