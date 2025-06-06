@@ -83,8 +83,8 @@ class DQN:
         self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
 
     def train(self, batch):
-        states = torch.tensor([s for s, q in batch], dtype=torch.float32).to(self.device)
-        q_targets = torch.tensor([q for s, q in batch], dtype=torch.float32).to(self.device)
+        states = torch.tensor(np.array([s for s, q in batch]), dtype=torch.float32).to(self.device)
+        q_targets = torch.tensor(np.array([q for s, q in batch]), dtype=torch.float32).to(self.device)
 
         self.optimizer.zero_grad()
         q_preds = self.model(states)
@@ -100,7 +100,7 @@ class DQN:
 
 
 class QLearner():
-    def __init__(self, env: gym.Env, max_episodes=10, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.9995, model_name="dqn_model.pth"):
+    def __init__(self, env: gym.Env, max_episodes=1, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.9995, model_name="dqn_model.pth"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
