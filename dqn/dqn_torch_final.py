@@ -100,7 +100,7 @@ class DQN:
 
 
 class QLearner():
-    def __init__(self, env: gym.Env, max_episodes=1, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.9995, model_name="dqn_model.pth"):
+    def __init__(self, env: gym.Env, max_episodes=5000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.9999, model_name="dqn_model.pth"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -232,7 +232,7 @@ class QLearner():
                 s = ns
             total_reward += rw
             episodes_reward.append(rw)
-            print(f"Episode {i}: final state = {s}, total reward = {rw:.2f}")
+            print(f"({i}: rw={rw:.2f})")
 
         print(f"Mean Reward: {total_reward / n_episodes}")
         print(f"Mean Episode Reward: {np.mean(episodes_reward)}")
