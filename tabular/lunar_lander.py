@@ -77,7 +77,7 @@ def discretize(obs):
     
 
 class QLearner():
-    def __init__(self, env:gym.Env, max_episodes=30000, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.999, policy_name="policy_lunar_lander"):
+    def __init__(self, env:gym.Env, max_episodes=10000, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.9995, policy_name="policy_lunar_lander"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -139,13 +139,13 @@ class QLearner():
                     s = ns
             
             # Stats of the episode
-            print(f"(m={modality} episode {n_episode} {episode_reward} {self.eps})")
             eps_per_episode.append(self.eps)
             self._espilon_update()
             s, _ = self.env.reset()
             s = discretize(s)
             total_rewards.append(episode_reward)
-            
+            if n_episode > 50:
+                print(f"(m={modality} episode {n_episode} {np.mean(total_rewards[-50:])} {self.eps})")
             
         # Dump q_table
         if modality == 1:
