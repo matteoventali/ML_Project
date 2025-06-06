@@ -100,7 +100,7 @@ class DQN:
 
 
 class QLearner():
-    def __init__(self, env: gym.Env, max_episodes=5000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.9999, model_name="dqn_model.pth"):
+    def __init__(self, env: gym.Env, max_episodes=3500, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.999, model_name="dqn_model.pth"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -109,9 +109,9 @@ class QLearner():
         self.eps = start_eps
         self.eps_decay = eps_decay
         self.batch_dimension = 64
-        self.bath_capacity = 50000
+        self.memory_capacity = 200000
         self.update_every = 4
-        self.update_modality = 0 # 0 deterministic, 1 non determinstic
+        self.update_modality = 1 # 0 deterministic, 1 non determinstic
         self.model_name = "./dqn_models/" + model_name
 
     def _espilon_update(self):
@@ -126,7 +126,7 @@ class QLearner():
             a = np.argmax(q_values).item()
             return a
 
-    def _prepareBatch(self, batch, q_network: DQN, update_modality = 0):
+    def _prepareBatch(self, batch, q_network: DQN):
         training_set = [] # Result of preparing the data
         
         # Preparing the batch
@@ -139,7 +139,7 @@ class QLearner():
             # Updating only in corrispondence of the action
             action = int(t[1])
             row = (t[0], q_values_s)
-            if update_modality == 0:
+            if self.update_modality == 0:
                 row[1][action] = t[2] + self.gamma * np.max(q_values_ns) * (1 - int(t[4]))
             else:
                 row[1][action] = q_values_s[action] + self.alpha * (t[2] + self.gamma * np.max(q_values_ns) * (1 - int(t[4])) - q_values_s[action])
@@ -150,7 +150,7 @@ class QLearner():
 
     def _normalize(self, state):
         amplitudes = [2.5, 2.5, 10., 10., 6.2831855, 10., 1., 1.]
-        return state #/ amplitudes
+        return state / amplitudes
 
     def DQN_Learning(self, modality=1): 
         self.eps = 1.0
@@ -159,7 +159,7 @@ class QLearner():
         q_network = DQN(8, self.env.action_space.n)
 
         # Creation of the dataset implementing the replay memory
-        memory = ReplayBuffer(self.bath_capacity)
+        memory = ReplayBuffer(self.memory_capacity)
 
         # Starting of the environment
         s, _ = self.env.reset()
@@ -185,12 +185,13 @@ class QLearner():
                 
                 # (s,a,r,s',done) in replay buffer
                 memory.add(self._normalize(s), a, reward, self._normalize(ns), done)
+                #memory.add(s, a, reward, ns, done)
 
                 # get a sample batch for training
                 if ( len(memory) > self.batch_dimension and n_steps % self.update_every == 0 ):
                     batch = memory.sample(self.batch_dimension)
                     # Preparing the batch
-                    training_set = self._prepareBatch(batch, q_network, self.update_modality)
+                    training_set = self._prepareBatch(batch, q_network)
                     q_network.train(training_set)
 
                 # Updating new state
@@ -249,7 +250,7 @@ if __name__ == "__main__":
     #os.makedirs("/content/drive/MyDrive/dqn_models/", exist_ok=True)
     
     # Lunar Lander Environment
-    env = gym.make("LunarLander-v3", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
+    env = gym.make("LunarLander-v3", render_mode="human", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
     
     # Menu
     mode = input("Select modality (0 = training, 1 = running): ").strip()

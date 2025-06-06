@@ -110,6 +110,7 @@ class QLearner():
         self.end_eps = end_eps
         self.eps = start_eps
         self.eps_decay = eps_decay
+        self.memory_capacity = 200000
         self.batch_dimension = 32
         self.update_modality = 0 # 0 deterministic, 1 non determinstic
         self.update_every = 4
@@ -161,7 +162,7 @@ class QLearner():
         q_network = DQN(8, self.env.action_space.n)
 
         # Creation of the dataset implementing the replay memory
-        memory = ReplayBuffer(10000)
+        memory = ReplayBuffer(self.memory_capacity)
 
         # Starting of the environment
         s, _ = self.env.reset()
