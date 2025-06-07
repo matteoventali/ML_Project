@@ -77,7 +77,7 @@ def discretize(obs):
     
 
 class QLearner():
-    def __init__(self, env:gym.Env, max_episodes=10000, gamma=0.9, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.9999, policy_name="policy_lunar_lander"):
+    def __init__(self, env:gym.Env, max_episodes=10000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.9995, policy_name="policy_lunar_lander"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
