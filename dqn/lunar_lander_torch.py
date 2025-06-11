@@ -12,26 +12,19 @@ import torch.optim as optim
 
 window_size = 500
 
-def function_plot(reward, epsilon_value):
-    mean_mobile = np.convolve(reward, np.ones(window_size)/window_size, mode="valid")
-
-    # Organizing the graph with two y axis
-    fig, ax1 = plt.subplots()
-
-    # First axis
-    ax1.plot(mean_mobile, color='red', label='reward_greedy_policy')
-    ax1.set_ylabel('epsilon greedy policy', color='red')
-    ax1.set_xlabel('episodes', color='blue')
-
-    # Second axis
-    ax2 = ax1.twinx()
-    ax2.plot(epsilon_value, color='orange', label='epsilon value')
-    ax2.set_ylabel('epsilon value', color='orange')
-    
-    plt.title("Reward")
+def accuracy_plot(reward, types):
+    x = range(len(reward))
+    mean = np.mean(reward)
+    plt.scatter(x,reward)
+    plt.title(f'Cumulative episode reward {types} policy')
+    plt.xlabel('Episode #')
+    plt.ylabel('Episode reward')
+    plt.axhline(y=mean, color='red', linestyle='--', label=f'Mean = {mean:.2f}')
+    plt.grid(True)
+    plt.legend(loc='upper right')
     plt.show()
 
-def function_plot_combined(reward_eps, reward_random, epsilon_value):
+def function_plot_combined(reward_eps, reward_random, epsilon_value, title):
     mean_mobile = np.convolve(reward_eps, np.ones(window_size)/window_size, mode="valid")
     mean_mobile_random = np.convolve(reward_random, np.ones(window_size)/window_size, mode="valid")
 
@@ -40,16 +33,28 @@ def function_plot_combined(reward_eps, reward_random, epsilon_value):
 
     # First axis
     ax1.plot(mean_mobile, color='red', label='reward_greedy_policy')
-    ax1.plot(mean_mobile_random, color='green', label='reward_greedy_policy')
-    ax1.set_ylabel('policies', color='red')
-    ax1.set_xlabel('episodes', color='blue')
+    ax1.plot(mean_mobile_random, color='green', label='reward_random_policy')
+    ax1.set_ylabel('policies')
+    ax1.set_xlabel('episodes')
 
     # Second axis
     ax2 = ax1.twinx()
     ax2.plot(epsilon_value, color='orange', label='reward_greedy_policy')
     ax2.set_ylabel('epsilon value', color='orange')
     
-    plt.title("Reward")
+    plt.title(f"Learning trend with {title} update rule")
+    plt.show()
+
+def function_plot_comparison(reward_det, reward_ndet):
+    mean_mobile_det = np.convolve(reward_det, np.ones(window_size)/window_size, mode="valid")
+    mean_mobile_ndet = np.convolve(reward_ndet, np.ones(window_size)/window_size, mode="valid")
+
+    plt.plot(mean_mobile_det, color='orange', label='Mean mobile deterministic update')
+    plt.plot(mean_mobile_ndet, color='blue', label='Mean mobile non deterministic update')
+    plt.ylabel('policies')
+    plt.xlabel('episodes')
+    plt.title("Comparison between update rules")
+    plt.legend()
     plt.show()
 
 
@@ -100,7 +105,7 @@ class DQN:
 
 
 class QLearner():
-    def __init__(self, env: gym.Env, max_episodes=3500, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.999, model_name="dqn_model.pth"):
+    def __init__(self, env: gym.Env, max_episodes=60, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.999, model_name="dqn_model.pth"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -152,8 +157,9 @@ class QLearner():
         amplitudes = [2.5, 2.5, 10., 10., 6.2831855, 10., 1., 1.]
         return state / amplitudes
 
-    def DQN_Learning(self, modality=1): 
+    def DQN_Learning(self, modality=1, update_modality=1): 
         self.eps = 1.0
+        self.update_modality = update_modality
 
         # Creation of the NN representing the Q-table
         q_network = DQN(8, self.env.action_space.n)
@@ -184,8 +190,8 @@ class QLearner():
                 done = terminated or truncated
                 
                 # (s,a,r,s',done) in replay buffer
-                memory.add(self._normalize(s), a, reward, self._normalize(ns), done)
-                #memory.add(s, a, reward, ns, done)
+                #memory.add(self._normalize(s), a, reward, self._normalize(ns), done)
+                memory.add(s, a, reward, ns, done)
 
                 # get a sample batch for training
                 if ( len(memory) > self.batch_dimension and n_steps % self.update_every == 0 ):
@@ -237,20 +243,37 @@ class QLearner():
                 s = ns
             total_reward += rw
             episodes_reward.append(rw)
-            print(f"({i}: rw={rw:.2f})")
-
-        print(f"Mean Reward: {total_reward / n_episodes}")
+        
         print(f"Mean Episode Reward: {np.mean(episodes_reward)}")
+        return episodes_reward
+
+    def run_random(self):
+        total_reward = 0
+        episodes_reward = []
+        n_episodes = 1000
+
+        for i in range(0,n_episodes):
+            s, _ = self.env.reset()
+            
+            terminated = truncated = False
+            rw = 0
+
+            while not (terminated or truncated):
+                a = self.env.action_space.sample()
+                ns, r, terminated, truncated, _ = self.env.step(a)
+                rw += r
+                s = ns
+
+            total_reward += rw
+            episodes_reward.append(rw)
+        
+        print(f"Mean Episode Reward: {np.mean(episodes_reward)}")        
+        return episodes_reward
 
 
 if __name__ == "__main__":
-    #drive.mount('/content/drive')
-    #output_dir = "/content/drive/MyDrive/reward_files_dqn/"
-    #os.makedirs(output_dir, exist_ok=True)
-    #os.makedirs("/content/drive/MyDrive/dqn_models/", exist_ok=True)
-    
     # Lunar Lander Environment
-    env = gym.make("LunarLander-v3", render_mode="human", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
+    env = gym.make("LunarLander-v3", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
     
     # Menu
     mode = input("Select modality (0 = training, 1 = running): ").strip()
@@ -263,23 +286,16 @@ if __name__ == "__main__":
         ql = QLearner(env, model_name=model_file)
 
     if mode == "0": # Training
-        policy = input("Select policy (0 = epsilon-greedy, 1 = random, 2 = combined): ").strip()
-        
-        if policy == "0": # Epsilon-Greedy policy
-            rw_eps, eps_values = ql.DQN_Learning(1)
-            np.save("./policy/reward_files", rw_eps)
-            function_plot(rw_eps, eps_values)
-        elif policy == "1": # Random policy
-            rw_random, eps_values = ql.DQN_Learning(0)
-            function_plot(rw_random, eps_values)
-        elif policy == "2": # Both policies
-            rw_random, eps_values = ql.DQN_Learning(0)
-            rw_eps, eps_values = ql.DQN_Learning(1)
-            np.save("./policy/reward_files", rw_eps)
-            function_plot_combined(rw_eps, rw_random, eps_values)
-        else:
-            print("Policy not valid")
+        rw_random = ql.run_random() 
+        rw_eps_det, eps_values = ql.DQN_Learning(update_modality=1)
+        rw_eps_ndet, eps_values = ql.DQN_Learning(update_modality=0)
+        function_plot_combined(rw_eps_det, rw_random, eps_values, title="det")
+        function_plot_combined(rw_eps_ndet, rw_random, eps_values, title="non det")
+        function_plot_comparison(rw_eps_det, rw_eps_ndet)
     elif mode == "1": # Running
-        ql.run_policy()
+        rw_policy = ql.run_policy()
+        rw_random = ql.run_random()
+        accuracy_plot(rw_policy, 'epsilon-greedy')
+        accuracy_plot(rw_random, 'random')
     else:
         print("Input not valid")

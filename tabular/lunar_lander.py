@@ -7,28 +7,20 @@ import gymnasium as gym
 from gymnasium.spaces import Box
 from collections import defaultdict
 import random as ran
-from pprint import pprint
 import pickle
 
 window_size = 500
 
-def function_plot(reward, epsilon_value):
-    mean_mobile = np.convolve(reward, np.ones(window_size)/window_size, mode="valid")
-
-    # Organizing the graph with two y axis
-    fig, ax1 = plt.subplots()
-
-    # First axis
-    ax1.plot(mean_mobile, color='red', label='reward_greedy_policy')
-    ax1.set_ylabel('epsilon greedy policy', color='red')
-    ax1.set_xlabel('episodes', color='blue')
-
-    # Second axis
-    ax2 = ax1.twinx()
-    ax2.plot(epsilon_value, color='orange', label='epsilon value')
-    ax2.set_ylabel('epsilon value', color='orange')
-    
-    plt.title("Reward")
+def accuracy_plot(reward, types):
+    x = range(len(reward))
+    mean = np.mean(reward)
+    plt.scatter(x,reward)
+    plt.title(f'Cumulative episode reward {types} policy')
+    plt.xlabel('Episode #')
+    plt.ylabel('Episode reward')
+    plt.axhline(y=mean, color='red', linestyle='--', label=f'Mean = {mean:.2f}')
+    plt.grid(True)
+    plt.legend(loc='upper right')
     plt.show()
 
 def function_plot_combined(reward_eps, reward_random, epsilon_value):
@@ -41,15 +33,15 @@ def function_plot_combined(reward_eps, reward_random, epsilon_value):
     # First axis
     ax1.plot(mean_mobile, color='red', label='reward_greedy_policy')
     ax1.plot(mean_mobile_random, color='green', label='reward_greedy_policy')
-    ax1.set_ylabel('policies', color='red')
-    ax1.set_xlabel('episodes', color='blue')
+    ax1.set_ylabel('policies')
+    ax1.set_xlabel('episodes')
 
     # Second axis
     ax2 = ax1.twinx()
     ax2.plot(epsilon_value, color='orange', label='reward_greedy_policy')
-    ax2.set_ylabel('epsilon value', color='orange')
+    ax2.set_ylabel('epsilon value')
     
-    plt.title("Reward")
+    plt.title("Learning trend")
     plt.show()
 
 def discretize(obs):
@@ -77,7 +69,7 @@ def discretize(obs):
     
 
 class QLearner():
-    def __init__(self, env:gym.Env, max_episodes=10000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.9995, policy_name="policy_lunar_lander"):
+    def __init__(self, env:gym.Env, max_episodes=100, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.9995, policy_name="policy_lunar_lander"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -181,11 +173,35 @@ class QLearner():
 
             total_reward += rw
             episodes_reward.append(rw)
-            print(f"({i}: rw={rw:.2f})")
         
-        print(f"Mean Reward: {total_reward/n_episodes}")
         print(f"Mean Episode Reward: {np.mean(episodes_reward)}")
+        return episodes_reward
+
+    def run_random(self):
+        total_reward = 0
+        episodes_reward = []
+        n_episodes = 1000
+
+        for i in range(0,n_episodes):
+            s, _ = self.env.reset()
+            s = discretize(s)
+            
+            terminated = truncated = False
+            rw = 0
+
+            while not (terminated or truncated):
+                a = self._next_action(s, 0)
+                ns, r, terminated, truncated, _ = self.env.step(a)
+                ns = discretize(ns)
+                rw += r
+                s = ns
+
+            total_reward += rw
+            episodes_reward.append(rw)
         
+        print(f"Mean Episode Reward: {np.mean(episodes_reward)}")        
+        return episodes_reward
+
 
 if __name__ == "__main__":
     # Lunar Lander Environment
@@ -202,23 +218,13 @@ if __name__ == "__main__":
         ql = QLearner(env, policy_name=policy_file)    
 
     if mode == "0": # Training
-        policy = input("Select policy (0 = epsilon-greedy, 1 = random, 2 = combined): ").strip()
-        
-        if policy == "0": # Epsilon-Greedy policy
-            rw_eps, eps_values = ql.tabular_QLearning(1)
-            np.save("./policy/reward_files", rw_eps)
-            function_plot(rw_eps, eps_values)
-        elif policy == "1": # Random policy
-            rw_random, eps_values = ql.tabular_QLearning(0)
-            function_plot(rw_random, eps_values)
-        elif policy == "2": # Both policies
-            rw_random, eps_values = ql.tabular_QLearning(0)
-            rw_eps, eps_values = ql.tabular_QLearning(1)
-            np.save("./policy/reward_files", rw_eps)
-            function_plot_combined(rw_eps, rw_random, eps_values)
-        else:
-            print("Policy not valid")
+        rw_random = ql.run_random()
+        rw_eps, eps_values = ql.tabular_QLearning()
+        function_plot_combined(rw_eps, rw_random, eps_values)
     elif mode == "1": # Running
-        ql.run_policy()
+        rw_policy = ql.run_policy()
+        rw_random = ql.run_random()
+        accuracy_plot(rw_policy, 'epsilon-greedy')
+        accuracy_plot(rw_random, 'random')
     else:
         print("Input not valid")
