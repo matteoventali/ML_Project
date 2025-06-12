@@ -69,7 +69,7 @@ def discretize(obs):
     
 
 class QLearner():
-    def __init__(self, env:gym.Env, max_episodes=100, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.9995, policy_name="policy_lunar_lander"):
+    def __init__(self, env:gym.Env, max_episodes=15000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0,  eps_decay=0.9995, policy_name="policy_lunar_lander"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -177,10 +177,15 @@ class QLearner():
         print(f"Mean Episode Reward: {np.mean(episodes_reward)}")
         return episodes_reward
 
-    def run_random(self):
+    def run_random(self, n_ep=None):
         total_reward = 0
         episodes_reward = []
         n_episodes = 1000
+
+        if n_ep != None:
+            n_episodes = n_ep
+        else:
+            n_episodes = self.max_episodes
 
         for i in range(0,n_episodes):
             s, _ = self.env.reset()
@@ -223,7 +228,7 @@ if __name__ == "__main__":
         function_plot_combined(rw_eps, rw_random, eps_values)
     elif mode == "1": # Running
         rw_policy = ql.run_policy()
-        rw_random = ql.run_random()
+        rw_random = ql.run_random(n_ep=1000)
         accuracy_plot(rw_policy, 'epsilon-greedy')
         accuracy_plot(rw_random, 'random')
     else:
