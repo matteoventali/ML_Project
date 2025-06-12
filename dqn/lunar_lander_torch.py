@@ -105,7 +105,7 @@ class DQN:
 
 
 class QLearner():
-    def __init__(self, env: gym.Env, max_episodes=60, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.999, model_name="dqn_model.pth"):
+    def __init__(self, env: gym.Env, max_episodes=8000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.999, model_name="dqn_model"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -145,9 +145,9 @@ class QLearner():
             action = int(t[1])
             row = (t[0], q_values_s)
             if self.update_modality == 0:
-                row[1][action] = t[2] + self.gamma * np.max(q_values_ns) * (1 - int(t[4]))
+                row[1][action] = t[2] + self.gamma * np.max(q_values_ns) * (1 - int(t[4])) #det
             else:
-                row[1][action] = q_values_s[action] + self.alpha * (t[2] + self.gamma * np.max(q_values_ns) * (1 - int(t[4])) - q_values_s[action])
+                row[1][action] = q_values_s[action] + self.alpha * (t[2] + self.gamma * np.max(q_values_ns) * (1 - int(t[4])) - q_values_s[action]) #nodet
             
             training_set.append(row)
 
@@ -212,12 +212,14 @@ class QLearner():
             if n_episode > 50:
                 print(f"(m={modality} episode {n_episode} {np.mean(total_rewards[-50:])} {self.eps})")
 
-        if modality == 1:
-            self._save_policy(q_network)
+        if update_modality == 1:
+            self._save_policy(q_network, title = "_ndet.pth")
+        elif update_modality == 0:
+            self._save_policy(q_network, title = "_det.pth")
         return total_rewards, eps_per_episode
 
-    def _save_policy(self, q_network: DQN):
-        torch.save(q_network.model.state_dict(), self.model_name)
+    def _save_policy(self, q_network: DQN, title= None):
+        torch.save(q_network.model.state_dict(), self.model_name + title)
 
     def _load_policy(self, q_network: DQN):
         q_network.model.load_state_dict(torch.load(self.model_name))
@@ -250,7 +252,7 @@ class QLearner():
     def run_random(self):
         total_reward = 0
         episodes_reward = []
-        n_episodes = 1000
+        n_episodes = 6000
 
         for i in range(0,n_episodes):
             s, _ = self.env.reset()
@@ -287,8 +289,8 @@ if __name__ == "__main__":
 
     if mode == "0": # Training
         rw_random = ql.run_random() 
-        rw_eps_det, eps_values = ql.DQN_Learning(update_modality=1)
-        rw_eps_ndet, eps_values = ql.DQN_Learning(update_modality=0)
+        rw_eps_det, eps_values = ql.DQN_Learning(update_modality=0)
+        rw_eps_ndet, eps_values = ql.DQN_Learning(update_modality=1)
         function_plot_combined(rw_eps_det, rw_random, eps_values, title="det")
         function_plot_combined(rw_eps_ndet, rw_random, eps_values, title="non det")
         function_plot_comparison(rw_eps_det, rw_eps_ndet)
