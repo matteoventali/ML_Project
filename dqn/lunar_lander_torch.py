@@ -210,7 +210,7 @@ class QLearner():
             s, _ = self.env.reset()
             total_rewards.append(episode_reward)
             if n_episode > 50:
-                print(f"(m={modality} episode {n_episode} {np.mean(total_rewards[-50:])} {self.eps})")
+                print(f"(m={self.update_modality} episode {n_episode} {np.mean(total_rewards[-50:])} {self.eps})")
 
         if update_modality == 1:
             self._save_policy(q_network, title = "_ndet.pth")
