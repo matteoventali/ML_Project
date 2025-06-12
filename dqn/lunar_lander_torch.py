@@ -312,8 +312,8 @@ if __name__ == "__main__":
         function_plot_combined(rw_eps_det, rw_random, eps_values, title="det")
         function_plot_combined(rw_eps_ndet, rw_random, eps_values, title="non det")
         function_plot_comparison(rw_eps_det, rw_eps_ndet)
-        plot_vector(ndet_loss)
-        plot_vector(det_loss)
+        plot_vector(ndet_loss, title="Loss trend with non-det update", xlabel="episodes", ylabel="mean loss")
+        plot_vector(det_loss, title="Loss trend with det update", xlabel="episodes", ylabel="mean loss")
 
     elif mode == "1": # Running
         rw_policy = ql.run_policy()
