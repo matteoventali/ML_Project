@@ -105,7 +105,7 @@ class DQN:
         loss.backward()
         self.optimizer.step()
 
-        return loss
+        return loss.item()
 
     def predict_qValue(self, state):
         state_input = torch.tensor(state, dtype=torch.float32).unsqueeze(0).to(self.device)
@@ -188,6 +188,7 @@ class QLearner():
         for n_episode in range(self.max_episodes):
             #print(f"Episode n: {n_episode}")
             episode_reward = 0
+            episode_loss = []
             done = False
             n_steps = 0
             while not done:
@@ -209,19 +210,21 @@ class QLearner():
                     batch = memory.sample(self.batch_dimension)
                     # Preparing the batch
                     training_set = self._prepareBatch(batch, q_network)
-                    episodes_loss.append(q_network.train(training_set))
+                    loss = q_network.train(training_set)
+                    episode_loss.append(loss)
 
                 # Updating new state
                 if not done:
                     s = ns
             
             # Stats of the episode
+            episodes_loss.append(np.mean(episode_loss))
             eps_per_episode.append(self.eps)
             self._espilon_update()
             s, _ = self.env.reset()
             total_rewards.append(episode_reward)
             if n_episode > 50:
-                print(f"(m={self.update_modality} episode {n_episode} {np.mean(total_rewards[-50:])} {self.eps})")
+                print(f"(m={self.update_modality} episode {n_episode} {np.mean(total_rewards[-50:])} {self.eps} {episodes_loss[n_episode]})")
 
         if update_modality == 1:
             self._save_policy(q_network, title = "_ndet.pth")
@@ -304,12 +307,13 @@ if __name__ == "__main__":
 
     if mode == "0": # Training
         rw_random = ql.run_random() 
-        rw_eps_det, eps_values, _ = ql.DQN_Learning(update_modality=0)
+        rw_eps_det, eps_values, det_loss = ql.DQN_Learning(update_modality=0)
         rw_eps_ndet, eps_values, ndet_loss = ql.DQN_Learning(update_modality=1)
         function_plot_combined(rw_eps_det, rw_random, eps_values, title="det")
         function_plot_combined(rw_eps_ndet, rw_random, eps_values, title="non det")
         function_plot_comparison(rw_eps_det, rw_eps_ndet)
         plot_vector(ndet_loss)
+        plot_vector(det_loss)
 
     elif mode == "1": # Running
         rw_policy = ql.run_policy()
