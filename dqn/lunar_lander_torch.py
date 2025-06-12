@@ -12,6 +12,14 @@ import torch.optim as optim
 
 window_size = 500
 
+def plot_vector(vector, title="title", xlabel="xlabel", ylabel="ylabel"):
+    plt.plot(vector, linestyle='-')
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.tight_layout()
+    plt.show()
+
 def accuracy_plot(reward, types):
     x = range(len(reward))
     mean = np.mean(reward)
@@ -97,6 +105,8 @@ class DQN:
         loss.backward()
         self.optimizer.step()
 
+        return loss
+
     def predict_qValue(self, state):
         state_input = torch.tensor(state, dtype=torch.float32).unsqueeze(0).to(self.device)
         with torch.no_grad():
@@ -105,7 +115,7 @@ class DQN:
 
 
 class QLearner():
-    def __init__(self, env: gym.Env, max_episodes=6000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.999, model_name="dqn_model"):
+    def __init__(self, env: gym.Env, max_episodes=8000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.9995, model_name="dqn_model"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -173,6 +183,7 @@ class QLearner():
         # Array for collecting total rewards
         total_rewards = []
         eps_per_episode = []
+        episodes_loss = []
 
         for n_episode in range(self.max_episodes):
             #print(f"Episode n: {n_episode}")
@@ -198,7 +209,7 @@ class QLearner():
                     batch = memory.sample(self.batch_dimension)
                     # Preparing the batch
                     training_set = self._prepareBatch(batch, q_network)
-                    q_network.train(training_set)
+                    episodes_loss.append(q_network.train(training_set))
 
                 # Updating new state
                 if not done:
@@ -216,7 +227,7 @@ class QLearner():
             self._save_policy(q_network, title = "_ndet.pth")
         elif update_modality == 0:
             self._save_policy(q_network, title = "_det.pth")
-        return total_rewards, eps_per_episode
+        return total_rewards, eps_per_episode, episodes_loss
 
     def _save_policy(self, q_network: DQN, title= None):
         torch.save(q_network.model.state_dict(), self.model_name + title)
@@ -293,11 +304,13 @@ if __name__ == "__main__":
 
     if mode == "0": # Training
         rw_random = ql.run_random() 
-        rw_eps_det, eps_values = ql.DQN_Learning(update_modality=0)
-        rw_eps_ndet, eps_values = ql.DQN_Learning(update_modality=1)
+        rw_eps_det, eps_values, _ = ql.DQN_Learning(update_modality=0)
+        rw_eps_ndet, eps_values, ndet_loss = ql.DQN_Learning(update_modality=1)
         function_plot_combined(rw_eps_det, rw_random, eps_values, title="det")
         function_plot_combined(rw_eps_ndet, rw_random, eps_values, title="non det")
         function_plot_comparison(rw_eps_det, rw_eps_ndet)
+        plot_vector(ndet_loss)
+
     elif mode == "1": # Running
         rw_policy = ql.run_policy()
         rw_random = ql.run_random(n_ep = 1000)
