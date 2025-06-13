@@ -307,10 +307,10 @@ if __name__ == "__main__":
 
     if mode == "0": # Training
         rw_random = ql.run_random() 
-        rw_eps_det, eps_values, det_loss = ql.DQN_Learning(update_modality=0)
-        rw_eps_ndet, eps_values, ndet_loss = ql.DQN_Learning(update_modality=1)
-        function_plot_combined(rw_eps_det, rw_random, eps_values, title="det")
-        function_plot_combined(rw_eps_ndet, rw_random, eps_values, title="non det")
+        rw_eps_det, eps_values_det, det_loss = ql.DQN_Learning(update_modality=0)
+        rw_eps_ndet, eps_values_ndet, ndet_loss = ql.DQN_Learning(update_modality=1)
+        function_plot_combined(rw_eps_det, rw_random, eps_values_det, title="det")
+        function_plot_combined(rw_eps_ndet, rw_random, eps_values_ndet, title="non det")
         function_plot_comparison(rw_eps_det, rw_eps_ndet)
         plot_vector(ndet_loss, title="Loss trend with non-det update", xlabel="episodes", ylabel="mean loss")
         plot_vector(det_loss, title="Loss trend with det update", xlabel="episodes", ylabel="mean loss")
