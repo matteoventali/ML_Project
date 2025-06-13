@@ -44,6 +44,21 @@ def function_plot_combined(reward_eps, reward_random, epsilon_value):
     plt.title("Learning trend")
     plt.show()
 
+def function_plot_tuning(reward_eps1, reward_eps2, reward_eps3):
+    mean_mobile1 = np.convolve(reward_eps1, np.ones(window_size)/window_size, mode="valid")
+    mean_mobile2 = np.convolve(reward_eps2, np.ones(window_size)/window_size, mode="valid")
+    mean_mobile3 = np.convolve(reward_eps3, np.ones(window_size)/window_size, mode="valid")
+
+    plt.plot(mean_mobile1, color='red', label='15k_y99_9995')
+    plt.plot(mean_mobile2, color='blue', label='15k_y9_999')
+    plt.plot(mean_mobile3, color='green', label='15k_y9_99')
+    plt.ylabel('policies')
+    plt.xlabel('episodes')
+
+    plt.title("Different learning trends")
+    plt.legend(loc='upper left')
+    plt.show()
+
 def discretize(obs):
         result = []
         
@@ -213,7 +228,7 @@ if __name__ == "__main__":
     env = gym.make("LunarLander-v3", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
     
     # Menu
-    mode = input("Select modality (0 = training, 1 = running): ").strip()
+    mode = input("Select modality (0 = training, 1 = running, 2 = tuning): ").strip()
     policy_file = input("File policy (empty for default):").strip()
     
     # Learner object
@@ -231,5 +246,16 @@ if __name__ == "__main__":
         rw_random = ql.run_random(n_ep=1000)
         accuracy_plot(rw_policy, 'epsilon-greedy')
         accuracy_plot(rw_random, 'random')
+    elif mode == "2": # Tuning
+        ql = QLearner(env, policy_name="tuning_15k_y99_9995", max_episodes=15000, gamma=0.99, eps_decay=0.9995)
+        rw_eps1, eps_values1 = ql.tabular_QLearning()
+
+        ql2 = QLearner(env, policy_name="tuning_15k_y9_999", max_episodes=15000, gamma=0.9, eps_decay=0.999)
+        rw_eps2, eps_values2 = ql2.tabular_QLearning()
+
+        ql3 = QLearner(env, policy_name="tuning_15k_y9_99", max_episodes=15000, gamma=0.9, eps_decay=0.99)
+        rw_eps3, eps_values3 = ql3.tabular_QLearning()
+
+        function_plot_tuning(rw_eps1, rw_eps2, rw_eps3)
     else:
         print("Input not valid")
