@@ -350,23 +350,23 @@ if __name__ == "__main__":
         accuracy_plot(rw_policy, 'epsilon-greedy')
         accuracy_plot(rw_random, 'random')
     elif mode == "2": # Tuning
-        ql = QLearner(env, policy_name="buffer_tuning_8k_y99_9995_b50k", gamma=0.99, eps_decay=0.9995, memory_capacity=50000)
-        buffer_rw_eps1, _, _ = ql.tabular_QLearning()
+        ql = QLearner(env, model_name="buffer_tuning_8k_y99_9995_b50k", gamma=0.99, eps_decay=0.9995, memory_capacity=50000)
+        buffer_rw_eps1, _, _ = ql.DQN_Learning()
         
-        ql = QLearner(env, policy_name="buffer_tuning_8k_y99_9995_b100k", gamma=0.99, eps_decay=0.9995, memory_capacity=100000)
-        buffer_rw_eps2, _, _ = ql.tabular_QLearning()
+        ql = QLearner(env, model_name="buffer_tuning_8k_y99_9995_b100k", gamma=0.99, eps_decay=0.9995, memory_capacity=100000)
+        buffer_rw_eps2, _, _ = ql.DQN_Learning()
 
-        ql = QLearner(env, policy_name="buffer_tuning_8k_y99_9995_b200k", gamma=0.99, eps_decay=0.9995, memory_capacity=200000)
-        buffer_rw_eps3, _, _ = ql.tabular_QLearning()
+        ql = QLearner(env, model_name="buffer_tuning_8k_y99_9995_b200k", gamma=0.99, eps_decay=0.9995, memory_capacity=200000)
+        buffer_rw_eps3, _, _ = ql.DQN_Learning()
 
-        ql = QLearner(env, policy_name="tuning_8k_y99_9995", gamma=0.99, eps_decay=0.9995)
-        rw_eps1, _, _ = ql.tabular_QLearning()
+        ql = QLearner(env, model_name="tuning_8k_y99_9995", gamma=0.99, eps_decay=0.9995)
+        rw_eps1, _, _ = ql.DQN_Learning()
         
-        ql = QLearner(env, policy_name="tuning_8k_y9_999", gamma=0.9, eps_decay=0.999)
-        rw_eps2, _, _ = ql.tabular_QLearning()
+        ql = QLearner(env, model_name="tuning_8k_y9_999", gamma=0.9, eps_decay=0.999)
+        rw_eps2, _, _ = ql.DQN_Learning()
 
-        ql = QLearner(env, policy_name="tuning_8k_y9_99", gamma=0.9, eps_decay=0.99)
-        rw_eps3, _, _ = ql.tabular_QLearning()
+        ql = QLearner(env, model_name="tuning_8k_y9_99", gamma=0.9, eps_decay=0.99)
+        rw_eps3, _, _ = ql.DQN_Learning()
 
         function_plot_tuning_buffer(buffer_rw_eps1, buffer_rw_eps2, buffer_rw_eps3)
         function_plot_tuning(rw_eps1, rw_eps2, rw_eps3)
