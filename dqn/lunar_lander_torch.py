@@ -53,6 +53,36 @@ def function_plot_combined(reward_eps, reward_random, epsilon_value, title):
     plt.title(f"Learning trend with {title} update rule")
     plt.show()
 
+def function_plot_tuning_buffer(reward_eps1, reward_eps2, reward_eps3):
+    mean_mobile1 = np.convolve(reward_eps1, np.ones(window_size)/window_size, mode="valid")
+    mean_mobile2 = np.convolve(reward_eps2, np.ones(window_size)/window_size, mode="valid")
+    mean_mobile3 = np.convolve(reward_eps3, np.ones(window_size)/window_size, mode="valid")
+
+    plt.plot(mean_mobile1, color='red', label='b50k')
+    plt.plot(mean_mobile2, color='blue', label='b100k')
+    plt.plot(mean_mobile3, color='green', label='b200k')
+    plt.ylabel('policies')
+    plt.xlabel('episodes')
+
+    plt.title("Different learning trends (buffer size)")
+    plt.legend(loc='upper left')
+    plt.show()
+
+def function_plot_tuning(reward_eps1, reward_eps2, reward_eps3):
+    mean_mobile1 = np.convolve(reward_eps1, np.ones(window_size)/window_size, mode="valid")
+    mean_mobile2 = np.convolve(reward_eps2, np.ones(window_size)/window_size, mode="valid")
+    mean_mobile3 = np.convolve(reward_eps3, np.ones(window_size)/window_size, mode="valid")
+
+    plt.plot(mean_mobile1, color='red', label='8k_y99_9995')
+    plt.plot(mean_mobile2, color='blue', label='8k_y9_999')
+    plt.plot(mean_mobile3, color='green', label='8k_y9_99')
+    plt.ylabel('policies')
+    plt.xlabel('episodes')
+
+    plt.title("Different learning trends")
+    plt.legend(loc='upper left')
+    plt.show()
+
 def function_plot_comparison(reward_det, reward_ndet):
     mean_mobile_det = np.convolve(reward_det, np.ones(window_size)/window_size, mode="valid")
     mean_mobile_ndet = np.convolve(reward_ndet, np.ones(window_size)/window_size, mode="valid")
@@ -115,7 +145,7 @@ class DQN:
 
 
 class QLearner():
-    def __init__(self, env: gym.Env, max_episodes=8000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.9995, model_name="dqn_model"):
+    def __init__(self, env: gym.Env, max_episodes=8000, memory_capacity=200000, gamma=0.99, alpha=0.1, end_eps=0.01, start_eps=1.0, eps_decay=0.9995, model_name="dqn_model"):
         self.env = env
         self.max_episodes = max_episodes        
         self.gamma = gamma
@@ -124,7 +154,7 @@ class QLearner():
         self.eps = start_eps
         self.eps_decay = eps_decay
         self.batch_dimension = 64
-        self.memory_capacity = 200000
+        self.memory_capacity = memory_capacity
         self.update_every = 4
         self.update_modality = 1 # 0 deterministic, 1 non determinstic
         self.model_name = "./dqn_models/" + model_name
@@ -314,11 +344,31 @@ if __name__ == "__main__":
         function_plot_comparison(rw_eps_det, rw_eps_ndet)
         plot_vector(ndet_loss, title="Loss trend with non-det update", xlabel="episodes", ylabel="mean loss")
         plot_vector(det_loss, title="Loss trend with det update", xlabel="episodes", ylabel="mean loss")
-
     elif mode == "1": # Running
         rw_policy = ql.run_policy()
         rw_random = ql.run_random(n_ep = 1000)
         accuracy_plot(rw_policy, 'epsilon-greedy')
         accuracy_plot(rw_random, 'random')
+    elif mode == "2": # Tuning
+        ql = QLearner(env, policy_name="buffer_tuning_8k_y99_9995_b50k", gamma=0.99, eps_decay=0.9995, memory_capacity=50000)
+        buffer_rw_eps1, _, _ = ql.tabular_QLearning()
+        
+        ql = QLearner(env, policy_name="buffer_tuning_8k_y99_9995_b100k", gamma=0.99, eps_decay=0.9995, memory_capacity=100000)
+        buffer_rw_eps2, _, _ = ql.tabular_QLearning()
+
+        ql = QLearner(env, policy_name="buffer_tuning_8k_y99_9995_b200k", gamma=0.99, eps_decay=0.9995, memory_capacity=200000)
+        buffer_rw_eps3, _, _ = ql.tabular_QLearning()
+
+        ql = QLearner(env, policy_name="tuning_8k_y99_9995", gamma=0.99, eps_decay=0.9995)
+        rw_eps1, _, _ = ql.tabular_QLearning()
+        
+        ql = QLearner(env, policy_name="tuning_8k_y9_999", gamma=0.9, eps_decay=0.999)
+        rw_eps2, _, _ = ql.tabular_QLearning()
+
+        ql = QLearner(env, policy_name="tuning_8k_y9_99", gamma=0.9, eps_decay=0.99)
+        rw_eps3, _, _ = ql.tabular_QLearning()
+
+        function_plot_tuning_buffer(buffer_rw_eps1, buffer_rw_eps2, buffer_rw_eps3)
+        function_plot_tuning(rw_eps1, rw_eps2, rw_eps3)
     else:
         print("Input not valid")
