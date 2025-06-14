@@ -326,7 +326,7 @@ if __name__ == "__main__":
     env = gym.make("LunarLander-v3", continuous=False, gravity=-10.0, enable_wind=False, wind_power=15.0, turbulence_power=1.5)
     
     # Menu
-    mode = input("Select modality (0 = training, 1 = running): ").strip()
+    mode = input("Select modality (0 = training, 1 = running, 2 = tuning): ").strip()
     model_file = input("File model (empty for default):").strip()
 
     # Learner object
