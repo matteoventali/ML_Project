@@ -273,39 +273,33 @@ class QLearner():
         q_network = DQN(8, self.env.action_space.n)
         self._load_policy(q_network)
 
-        total_reward = 0
         episodes_reward = []
         episodes_length = []
         success_100 = 0 # Times reward > 100
         success_200 = 0 # Times reward > 200
         n_episodes = 1000
 
-        for i in range(0,n_episodes):
+        for i in range(n_episodes):
             s, _ = self.env.reset()
-            
             terminated = truncated = False
-            rw = 0
             length_ep = 0
+            rw = 0
 
             while not (terminated or truncated):
-                a = np.argmax(self.policy[s])
+                q_values = q_network.predict_qValue(s)[0]
+                a = np.argmax(q_values)
                 ns, r, terminated, truncated, _ = self.env.step(a)
-                length_ep += 1
                 rw += r
                 s = ns
-
-            total_reward += rw
+            
             episodes_reward.append(rw)
             episodes_length.append(length_ep)
-            if total_reward >= 100:
+            if rw >= 100:
                 success_100 += 1
-            if total_reward >= 200:
+            if rw >= 200:
                 success_200 += 1
-        
+
         print(f"Mean Episode Reward: {np.mean(episodes_reward)}")
-        print(f"Success >= 100: {success_100}")
-        print(f"Success >= 200: {success_200}")
-        print(f"Mean Episode Length: {np.mean(episodes_length)}")
         return episodes_reward
 
     def run_random(self, n_ep=None):

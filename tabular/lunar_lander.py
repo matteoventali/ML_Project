@@ -168,7 +168,6 @@ class QLearner():
     def run_policy(self):
         self.load_policy()
         
-        total_reward = 0
         episodes_reward = []
         episodes_length = []
         success_100 = 0 # Times reward > 100
@@ -191,15 +190,13 @@ class QLearner():
                 rw += r
                 s = ns
 
-            total_reward += rw
             episodes_reward.append(rw)
             episodes_length.append(length_ep)
-            if total_reward >= 100:
+            if rw >= 100:
                 success_100 += 1
-            if total_reward >= 200:
+            if rw >= 200:
                 success_200 += 1
             
-        
         print(f"Mean Episode Reward: {np.mean(episodes_reward)}")
         print(f"Success >= 100: {success_100}")
         print(f"Success >= 200: {success_200}")
