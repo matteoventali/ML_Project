@@ -247,13 +247,13 @@ if __name__ == "__main__":
         accuracy_plot(rw_policy, 'epsilon-greedy')
         accuracy_plot(rw_random, 'random')
     elif mode == "2": # Tuning
-        ql = QLearner(env, policy_name="tuning_15k_y99_9995", max_episodes=15000, gamma=0.99, eps_decay=0.9995)
+        ql = QLearner(env, policy_name="tuning_15k_y99_9995_2", max_episodes=15000, gamma=0.99, eps_decay=0.9995)
         rw_eps1, eps_values1 = ql.tabular_QLearning()
 
-        ql2 = QLearner(env, policy_name="tuning_15k_y9_999", max_episodes=15000, gamma=0.9, eps_decay=0.999)
+        ql2 = QLearner(env, policy_name="tuning_15k_y9_999_2", max_episodes=15000, gamma=0.9, eps_decay=0.999)
         rw_eps2, eps_values2 = ql2.tabular_QLearning()
 
-        ql3 = QLearner(env, policy_name="tuning_15k_y9_99", max_episodes=15000, gamma=0.9, eps_decay=0.99)
+        ql3 = QLearner(env, policy_name="tuning_15k_y9_99_2", max_episodes=15000, gamma=0.9, eps_decay=0.99)
         rw_eps3, eps_values3 = ql3.tabular_QLearning()
 
         function_plot_tuning(rw_eps1, rw_eps2, rw_eps3)
