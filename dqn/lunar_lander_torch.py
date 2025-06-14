@@ -288,6 +288,7 @@ class QLearner():
             while not (terminated or truncated):
                 q_values = q_network.predict_qValue(s)[0]
                 a = np.argmax(q_values)
+                length_ep += 1
                 ns, r, terminated, truncated, _ = self.env.step(a)
                 rw += r
                 s = ns
@@ -300,6 +301,10 @@ class QLearner():
                 success_200 += 1
 
         print(f"Mean Episode Reward: {np.mean(episodes_reward)}")
+        print(f"Success >= 100: {success_100}")
+        print(f"Success >= 200: {success_200}")
+        print(f"Mean Episode Length: {np.mean(episodes_length)}")
+        return episodes_reward
         return episodes_reward
 
     def run_random(self, n_ep=None):
